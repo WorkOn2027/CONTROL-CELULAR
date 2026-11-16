@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#eceef1">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icono-192.png">
+<title>Control Celular</title>
+<style>
+  :root {
+    --fondo: #eceef1;
+    --cuerpo: #fbfbfc;
+    --tecla: #e4e7eb;
+    --tecla-borde: #d3d7dd;
+    --on: #9aa3ae;
+    --texto: #59616b;
+    --A: #3c9a5f; --B: #c9483f; --X: #3a72c4; --Y: #c9a227;
+    --V: #8a5cc7; --N: #d9822b; --K: #3d444d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; background: var(--fondo);
+    font-family: system-ui, sans-serif; color: var(--texto);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  .control {
+    position: fixed; inset: 1.5vh 1vw; background: var(--cuerpo);
+    border-radius: 6vh; border: 1px solid #dfe2e6;
+  }
+  .el { position: absolute; transform: translate(-50%, -50%); }
+  .tecla {
+    background: var(--tecla); border: 1px solid var(--tecla-borde);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--texto);
+  }
+  .tecla.on { background: var(--on); color: #fff; }
+
+  /* Sticks */
+  .stick { border-radius: 50%; background: var(--tecla); border: 1px solid var(--tecla-borde); }
+  .perilla { position: absolute; left: 50%; top: 50%; width: 15vh; height: 15vh;
+             margin: -7.5vh 0 0 -7.5vh; border-radius: 50%; background: #fff;
+             border: 1px solid #c9ced5; will-change: transform; }
+  .stick.on .perilla { background: #f1f3f5; border-color: var(--on); }
+  .stick.giro .perilla { border-color: var(--X); }
+
+  /* Cruceta */
+  .dpad .tecla { position: absolute; width: 34.4%; height: 34.4%; border-radius: 2vh; font-size: 3.5vh; }
+  .dpad [data-d=UP]    { left: 32.8%; top: 0; }
+  .dpad [data-d=DOWN]  { left: 32.8%; bottom: 0; }
+  .dpad [data-d=LEFT]  { left: 0; top: 32.8%; }
+  .dpad [data-d=RIGHT] { right: 0; top: 32.8%; }
+  .dpad .centro { position: absolute; left: 32.8%; top: 32.8%; width: 34.4%; height: 34.4%; background: var(--tecla); }
+
+  .punto { width: 2.6vh; height: 2.6vh; border-radius: 50%; background: #d0544a; }
+  .punto.ok { background: #3c9a5f; }
+  .menuBtn { width: 9vh; height: 7vh; border-radius: 3.5vh; font-size: 3.5vh; }
+  .tecla { flex-direction: column; }
+
+  /* Forma alargada (una sola fila, acostado) */
+  .control.forma-alargado { inset: 14vh 1.5vw; border-radius: 36vh; }
+  .barra3.v { flex-direction: column; gap: 4vh; }
+
+  /* Editor de control */
+  .control.editando .el:not(.nombreJuego):not(.barra3) { outline: 2px dashed rgba(58,114,196,.5); outline-offset: 2px; }
+  .control.editando .el.elegidoEd { outline: 3px solid var(--X) !important; }
+  body.arrastrando .edBarra { opacity: .12; pointer-events: none; }
+  .control.editando .barra3 { opacity: .35; }
+  .edBarra { position: fixed; left: 0; right: 0; z-index: 8; display: flex; gap: 1.5vw; align-items: center;
+             padding: 1.5vh 2vw; background: rgba(251,251,252,.97); overflow-x: auto; touch-action: pan-x;
+             white-space: nowrap; font-size: 3.6vh; box-shadow: 0 0 0 1px #dfe2e6; }
+  #edArriba { top: 0; } #edPanel { bottom: 0; }
+  body.edInv #edArriba { top: auto; bottom: 0; } body.edInv #edPanel { bottom: auto; top: 0; }
+  .edBarra button, .edBarra select, .edBarra input { font: inherit; font-size: 3.6vh; padding: 1.2vh 2vh; flex: none;
+             border-radius: 2vh; border: 1px solid var(--tecla-borde); background: #fff; color: var(--texto); }
+  .edBarra .grupo { display: inline-flex; gap: 1vw; align-items: center; flex: none; }
+  .edBarra .principal { background: var(--X); color: #fff; border-color: var(--X); font-weight: 700; }
+  .edBarra .sw { width: 6.5vh; height: 6.5vh; padding: 0; border-radius: 50%; border: 2px solid #fff;
+                 box-shadow: 0 0 0 1px #c9ced5; }
+  .edBarra .sw.si { box-shadow: 0 0 0 3px var(--X); }
+  .edBarra input[type=text] { width: 20vw; }
+  .edBarra .sep { width: 1px; align-self: stretch; background: #dfe2e6; flex: none; }
+  .tecla.blanca { background: #fff; border: 2px solid var(--tecla-borde); }
+  .tecla.blanca.on { background: var(--on); color: #fff; }
+
+  /* Control armado por juego (#pad3, lo dibuja plantillas.js) */
+  .tecla.color { background: #fff; border: 2px solid var(--c); color: var(--c); }
+  .tecla.color.on { background: var(--c); color: #fff; }
+  .tecla .sub { font-size: max(2.3vh, .45em); font-weight: 500; opacity: .85; margin-top: .2em; }
+  .barra3 { display: flex; gap: 2vw; align-items: center; }
+  .nombreJuego { font-size: 2.8vh; max-width: 30vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                 opacity: .7; pointer-events: none; }
+
+  /* Lista de juegos de Steam */
+  #lista.ver { display: block; overflow-y: auto; touch-action: pan-y; text-align: left; padding: 4vh 4vw; }
+  #lista .cabeza { display: flex; flex-wrap: wrap; gap: 2vh 3vw; align-items: center; margin-bottom: 3vh; }
+  #lista h2 { font-size: 5vh; margin-right: auto; }
+  #juegosGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(25vw, 1fr)); gap: 3vh 2vw; }
+  .juego { display: flex !important; flex-direction: column; align-items: stretch; gap: 1vh; padding: 1.5vh !important;
+           text-align: left; position: relative; }
+  .juego img, .juego .sinFoto { width: 100%; aspect-ratio: 460 / 215; border-radius: 1.5vh; background: #dfe2e6;
+                                object-fit: cover; display: block; }
+  .juego .n { font-size: 3.6vh; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .juego .t { font-size: 2.8vh; opacity: .75; }
+  .juego.abierto { border: 3px solid var(--A) !important; }
+  .juego .badge { position: absolute; top: 2.5vh; left: 2.5vh; background: var(--A); color: #fff; font-size: 2.6vh;
+                  padding: .4vh 1.4vh; border-radius: 2vh; }
+  #estadoLista { font-size: 4vh; }
+
+  /* Selector de modelo en el menú */
+  .modelos { gap: 3vw !important; }
+  .modelo { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; padding: 2vh 2vw !important; }
+  .modelo svg { width: 21vw; height: 10vw; max-height: 20vh; }
+  .modelo small { font-size: 3vh; opacity: .75; max-width: 21vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .modelo.elegido { border: 3px solid var(--X) !important; }
+
+  /* Ventanas */
+  .capa { position: fixed; inset: 0; background: rgba(236,238,241,.97); display: none;
+          align-items: center; justify-content: center; flex-direction: column; gap: 3vh;
+          z-index: 10; font-size: 5vh; text-align: center; padding: 4vh; }
+  .capa.ver { display: flex; }
+  .capa input { font-size: 8vh; width: 30vh; text-align: center; letter-spacing: 1.5vh;
+                border: 2px solid var(--tecla-borde); border-radius: 2vh; padding: 1vh; }
+  .capa button, .capa a.btn { font-size: 4.2vh; padding: 2vh 4vh; border-radius: 3vh; border: 1px solid var(--tecla-borde);
+                 background: #fff; color: var(--texto); text-decoration: none; font-family: inherit; }
+  .capa label { font-size: 4.2vh; display: flex; gap: 2vh; align-items: center; }
+  .capa input[type=checkbox] { width: 5vh; height: 5vh; }
+  .capa input[type=range] { width: 30vw; font-size: inherit; padding: 0; border: 0; }
+  .capa select { font-size: 4.2vh; padding: 1vh 2vh; border-radius: 2vh; border: 1px solid var(--tecla-borde);
+                 background: #fff; color: var(--texto); font-family: inherit; }
+  #menu.ver { display: grid; grid-template-columns: 1fr 1fr; align-content: start; justify-items: start;
+              gap: 3vh 5vw; padding: 5vh 6vw; overflow-y: auto; touch-action: pan-y; text-align: left; }
+  #menu h2 { font-size: 4.6vh; grid-column: 1 / -1; }
+  #menu .col { display: flex; flex-direction: column; gap: 3vh; align-items: flex-start; }
+  #menu .ancho { grid-column: 1 / -1; display: flex; gap: 3vw; flex-wrap: wrap; }
+  #error { color: var(--B); font-size: 4vh; min-height: 5vh; }
+  [hidden] { display: none !important; }
+  #girar { display: none; }
+  @media (orientation: portrait) {
+    #girar { display: flex; z-index: 20; }
+  }
+</style>
+</head>
+<body>
+<div class="control" id="pad3" hidden></div>
+
+<div class="edBarra" id="edArriba" hidden>
+  <b>Editor de control</b>
+  <button data-ed="addBtn">+ Botón</button>
+  <button data-ed="addStick">+ Stick</button>
+  <button data-ed="addDpad">+ Cruceta</button>
+  <button data-ed="invertir">⇅ Barras</button>
+  <button data-ed="restaurar">Restaurar original</button>
+  <button data-ed="cancelar">Cancelar</button>
+  <button data-ed="guardar" class="principal">Guardar</button>
+</div>
+<div class="edBarra" id="edPanel" hidden>
+  <span id="edAyuda">Tocá un botón para cambiarlo, o arrastralo para moverlo.</span>
+  <span class="grupo edSel"><button data-ed="menos">−</button>Tamaño<button data-ed="mas">+</button></span>
+  <span class="grupo edSel soloBtn"><button data-ed="angosto">↔ −</button><button data-ed="ancho">↔ +</button>
+    <button data-ed="forma">Redondo / píldora</button></span>
+  <span class="sep edSel soloBtn"></span>
+  <span class="grupo edSel soloBtn" id="edColores"></span>
+  <span class="sep edSel soloBtn"></span>
+  <label class="grupo edSel soloBtn">Manda <select id="edFuncion"></select></label>
+  <label class="grupo edSel soloStick">Es el <select id="edStick"><option value="L">stick izquierdo</option><option value="R">stick derecho</option></select></label>
+  <span class="grupo edSel soloBtn"><input id="edTexto" type="text" maxlength="14" placeholder="Texto">
+    <input id="edSub" type="text" maxlength="18" placeholder="Texto chico"></span>
+  <span class="grupo edSel"><button data-ed="duplicar">Duplicar</button><button data-ed="borrar">Borrar</button></span>
+</div>
+
+<div class="capa" id="emparejar">
+  <div>Escribí el código que aparece en la PC</div>
+  <input id="codigo" inputmode="numeric" maxlength="4" autocomplete="off">
+  <div id="error"></div>
+  <button id="conectar">Conectar</button>
+</div>
+
+<div class="capa" id="menu">
+  <h2>Elegí el control</h2>
+  <div class="ancho modelos">
+    <button class="modelo" data-m="completo">
+      <svg viewBox="0 0 200 92" aria-hidden="true">
+        <rect x="2" y="2" width="196" height="88" rx="18" fill="#fbfbfc" stroke="#c9ced5" stroke-width="3"/>
+        <rect x="12" y="8" width="30" height="10" rx="4" fill="#d3d7dd"/><rect x="158" y="8" width="30" height="10" rx="4" fill="#d3d7dd"/>
+        <circle cx="38" cy="42" r="15" fill="#e4e7eb" stroke="#c9ced5"/><circle cx="124" cy="68" r="13" fill="#e4e7eb" stroke="#c9ced5"/>
+        <path d="M72 58h8v-8h8v8h8v8h-8v8h-8v-8h-8z" fill="#9aa3ae"/>
+        <circle cx="162" cy="32" r="6" fill="#c9a227"/><circle cx="150" cy="44" r="6" fill="#3a72c4"/>
+        <circle cx="174" cy="44" r="6" fill="#c9483f"/><circle cx="162" cy="56" r="6" fill="#3c9a5f"/>
+      </svg>
+      Completo (Xbox)
+    </button>
+    <button class="modelo" data-m="alargado">
+      <svg viewBox="0 0 200 92" aria-hidden="true">
+        <rect x="2" y="22" width="196" height="48" rx="24" fill="#fbfbfc" stroke="#c9ced5" stroke-width="3"/>
+        <path d="M18 42h8v-8h8v8h8v8h-8v8h-8v-8h-8z" fill="#9aa3ae"/>
+        <circle cx="62" cy="46" r="11" fill="#fff" stroke="#9aa3ae" stroke-width="2"/>
+        <rect x="80" y="34" width="10" height="24" rx="5" fill="#e4e7eb" stroke="#c9ced5"/>
+        <circle cx="106" cy="34" r="4" fill="#d3d7dd"/><circle cx="106" cy="46" r="4" fill="#d3d7dd"/><circle cx="106" cy="58" r="4" fill="#d3d7dd"/>
+        <circle cx="136" cy="46" r="8" fill="#fff" stroke="#9aa3ae" stroke-width="2"/><circle cx="162" cy="46" r="8" fill="#fff" stroke="#9aa3ae" stroke-width="2"/>
+      </svg>
+      Alargado (1, 2, A, B)
+    </button>
+    <button class="modelo" data-m="juego" id="cardJuego">
+      <svg viewBox="0 0 200 92" aria-hidden="true">
+        <rect x="6" y="10" width="54" height="34" rx="5" fill="#dfe2e6"/><rect x="70" y="10" width="54" height="34" rx="5" fill="#dfe2e6"/>
+        <rect x="134" y="10" width="54" height="34" rx="5" fill="#3a72c4"/>
+        <rect x="6" y="52" width="54" height="34" rx="5" fill="#dfe2e6"/><rect x="70" y="52" width="54" height="34" rx="5" fill="#dfe2e6"/>
+        <rect x="134" y="52" width="54" height="34" rx="5" fill="#dfe2e6"/>
+        <path d="M150 27h6v-6h6v6h6v6h-6v6h-6v-6h-6z" fill="#fff"/>
+      </svg>
+      <span>Por juego (Steam)</span><small id="juegoActual"></small>
+    </button>
+  </div>
+  <div class="ancho" id="filaTipo" hidden>
+    <label>Control para <b id="tipoNombre"></b>: <select id="optTipo"></select></label>
+  </div>
+  <h2>Opciones</h2>
+  <div class="col">
+    <label><input type="checkbox" id="optToque"> Vibrar al tocar</label>
+    <label><input type="checkbox" id="optJuego"> Vibración del juego</label>
+    <button id="pantalla">Pantalla completa</button>
+    <button id="editor">Editor de control</button>
+  </div>
+  <div class="col" id="giroOpts">
+    <label>Giroscopio
+      <select id="optGiro">
+        <option value="0">Apagado</option>
+        <option value="v">Volante (inclinar → stick izq.)</option>
+        <option value="a">Apuntar (mover → stick der.)</option>
+      </select>
+    </label>
+    <label>Sensibilidad <input type="range" id="optSens" min="1" max="10" step="1"></label>
+    <label><input type="checkbox" id="optInvX"> Invertir horizontal</label>
+    <label><input type="checkbox" id="optInvY"> Invertir vertical</label>
+  </div>
+  <div class="ancho">
+    <button id="cerrar">Volver al control</button>
+    <button id="centrar" hidden>Centrar volante</button>
+    <button id="instalar" hidden>Instalar app</button>
+    <a class="btn" id="activar" href="/configurar.html" hidden>Activar app y giroscopio</a>
+  </div>
+</div>
+
+<div class="capa" id="lista">
+  <div class="cabeza">
+    <h2>Tus juegos de Steam</h2>
+    <label><input type="checkbox" id="optAuto"> Cambiar solo al juego que abro en la PC</label>
+    <button id="listaCerrar">Volver</button>
+  </div>
+  <div id="estadoLista"></div>
+  <div id="juegosGrid"></div>
+</div>
+
+<div class="capa" id="girar">Girá el celular (acostado) ↻</div>
+
+<script src="/plantillas.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const guardar = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+  const limitar = (v) => v > 1 ? 1 : v < -1 ? -1 : v;
+
+  const seguro = location.protocol === "https:";
+  const opt = {
+    toque: leer("toque", "1") === "1", juego: leer("juego", "1") === "1",
+    giro: leer("giro", "0"), sens: +leer("sens", "5"),
+    invX: leer("invX", "0") === "1", invY: leer("invY", "0") === "1",
+    auto: leer("auto", "1") === "1",
+  };
+  const puedeVibrar = "vibrate" in navigator;
+
+  // ---------- Conexión ----------
+  let ws = null, listo = false, token = leer("token", null);
+
+  function enviar(m) { if (listo && !editando && ws.readyState === 1) ws.send(m); }
+
+  function conectar(clave) {
+    if (ws) { ws.onclose = null; ws.close(); }
+    listo = false;
+    ws = new WebSocket(`${seguro ? "wss" : "ws"}://${location.host}/ws`);
+    ws.onopen = () => ws.send("a " + clave);
+    ws.onmessage = (e) => {
+      const p = e.data.split(" ");
+      if (p[0] === "ok") {
+        token = p[1]; guardar("token", token); listo = true;
+        $("emparejar").classList.remove("ver"); puntos(true);
+      } else if (p[0] === "no") {
+        if (token && clave === token) { token = null; guardar("token", null); }
+        $("error").textContent = "Código incorrecto";
+        pedirCodigo();
+      } else if (p[0] === "v") {
+        vibrarJuego(+p[1], +p[2]);
+      } else if (p[0] === "j") {
+        juegoAbiertoEnPC(+p[1], p[2], p.slice(3).join(" "));
+      }
+    };
+    ws.onclose = () => {
+      listo = false; puntos(false); soltarTodo(false);
+      if (token) setTimeout(() => conectar(token), 1000);
+    };
+  }
+
+  function puntos(ok) { document.querySelectorAll(".punto").forEach((p) => p.classList.toggle("ok", ok)); }
+  function pedirCodigo() { $("emparejar").classList.add("ver"); $("codigo").value = ""; }
+  $("conectar").onclick = () => { const c = $("codigo").value.trim(); if (c.length === 4) { $("error").textContent = ""; conectar(c); } };
+  $("codigo").onkeyup = (e) => { if (e.key === "Enter") $("conectar").onclick(); };
+
+  // ---------- Vibración ----------
+  function toque() { if (opt.toque && puedeVibrar) navigator.vibrate(12); }
+  function vibrarJuego(g, c) {
+    if (!opt.juego || !puedeVibrar) return;
+    navigator.vibrate(Math.max(g, c) > 0 ? 5000 : 0);
+  }
+
+  // ---------- Botones (A/B/X/Y, LB/RB, Start, etc.) ----------
+  const dedos = new Map(); // pointerId -> {tipo, ...}
+
+  // Cuántos dedos aprietan cada botón: si dos teclas mandan lo mismo (A y Derrape), soltar una no suelta la otra.
+  let cuenta = {};
+  function pulsar(msg, on) {
+    const n = (cuenta[msg] || 0) + (on ? 1 : -1);
+    cuenta[msg] = Math.max(0, n);
+    if (on && n === 1) enviar(msg + (msg[0] === "t" ? " 255" : " 1"));
+    else if (!on && n === 0) enviar(msg + " 0");
+  }
+  function boton(el, on) {
+    el.classList.toggle("on", on);
+    if (el.dataset.t) pulsar(`t ${el.dataset.t}`, on);
+    if (el.dataset.b) pulsar(`b ${el.dataset.b}`, on);
+    if (on) toque();
+  }
+
+  // ---------- Sticks (dedo o giroscopio; el dedo siempre gana) ----------
+  // Siempre hay stick L y R (el giroscopio los usa aunque el control no los muestre);
+  // "el" apunta al dibujo del control visible, o es null si ese control no tiene ese stick.
+  const nuevoStick = () => ({ el: null, perilla: null, dedo: false, x: 0, y: 0, gx: 0, gy: 0,
+                              enviadoX: 0, enviadoY: 0, cx: 0, cy: 0, r: 1, radioVis: 1 });
+  const sticks = { L: nuevoStick(), R: nuevoStick() };
+  function enlazarSticks(pad) {
+    for (const k in sticks) {
+      const s = sticks[k];
+      s.el = pad.querySelector(`.stick[data-s=${k}]`);
+      s.perilla = s.el ? s.el.firstElementChild : null;
+      s.radioVis = 1;
+    }
+  }
+  let pendiente = false;
+  function programar() { if (!pendiente) { pendiente = true; requestAnimationFrame(cuadro); } }
+  function cuadro() {
+    pendiente = false;
+    for (const k in sticks) {
+      const s = sticks[k];
+      const x = s.dedo ? s.x : s.gx, y = s.dedo ? s.y : s.gy;
+      if (x !== s.enviadoX || y !== s.enviadoY) {
+        s.enviadoX = x; s.enviadoY = y;
+        if (s.el) {
+          if (!s.radioVis || s.radioVis === 1) s.radioVis = s.el.offsetWidth / 2 - s.perilla.offsetWidth / 4;
+          s.perilla.style.transform = `translate(${x * s.radioVis / 1000}px, ${-y * s.radioVis / 1000}px)`;
+        }
+        enviar(`s ${k} ${x} ${y}`);
+      }
+    }
+  }
+  function moverStick(s, px, py) {
+    let dx = (px - s.cx) / s.r, dy = (py - s.cy) / s.r;
+    const d = Math.hypot(dx, dy);
+    if (d > 1) { dx /= d; dy /= d; }
+    s.x = Math.round(dx * 1000); s.y = Math.round(-dy * 1000);
+    programar();
+  }
+  window.addEventListener("resize", () => { for (const k in sticks) sticks[k].radioVis = 1; });
+
+  // ---------- Cruceta (se puede deslizar el dedo, 8 direcciones) ----------
+  let dp = null, dpActual = new Set(); // cruceta en uso (cada modelo tiene la suya)
+  const dpEl = (d) => dp.querySelector(`[data-d=${d}]`);
+  function cruceta(px, py) {
+    const r = dp.getBoundingClientRect();
+    const dx = (px - (r.left + r.width / 2)) / (r.width / 2);
+    const dy = (py - (r.top + r.height / 2)) / (r.height / 2);
+    const nuevo = new Set();
+    if (Math.hypot(dx, dy) > 0.25) {
+      const a = Math.atan2(dy, dx) * 180 / Math.PI; // 0 = derecha, 90 = abajo
+      if (a > -67.5 && a < 67.5) nuevo.add("RIGHT");
+      if (a > 22.5 && a < 157.5) nuevo.add("DOWN");
+      if (a > 112.5 || a < -112.5) nuevo.add("LEFT");
+      if (a > -157.5 && a < -22.5) nuevo.add("UP");
+    }
+    ponerCruceta(nuevo);
+  }
+  function ponerCruceta(nuevo) {
+    for (const d of dpActual) if (!nuevo.has(d)) { dpEl(d).classList.remove("on"); enviar(`b ${d} 0`); }
+    for (const d of nuevo) if (!dpActual.has(d)) { dpEl(d).classList.add("on"); enviar(`b ${d} 1`); toque(); }
+    dpActual = nuevo;
+  }
+
+  // ---------- Giroscopio ----------
+  // Volante: inclinar el celu como un volante mueve el stick izquierdo (horizontal).
+  // Apuntar: girar/mover el celu mueve el stick derecho (velocidad de giro, como la mira con giroscopio).
+  let ceroVolante = 0, ultimoAngulo = 0;
+  const anguloPantalla = () => ((screen.orientation && screen.orientation.angle) || window.orientation || 0);
+  const paso = (v) => Math.round(limitar(v) * 50) * 20; // pasos de 2% para no mandar ruido
+
+  // Filtros para que no salte: se suaviza la gravedad (volante) y la velocidad de giro (apuntar).
+  let fgx = 0, fgy = 0, fH = 0, fV = 0, hayFiltro = false;
+  const SUAVE_V = 0.25, SUAVE_A = 0.35; // más bajo = más suave pero con un poquito más de demora
+
+  function alMover(e) {
+    const ang = anguloPantalla();
+    if (opt.giro === "v") {
+      const g = e.accelerationIncludingGravity;
+      if (!g || g.x === null) return;
+      if (!hayFiltro) { fgx = g.x; fgy = g.y; hayFiltro = true; }
+      fgx += (g.x - fgx) * SUAVE_V; fgy += (g.y - fgy) * SUAVE_V;
+      // Celu casi horizontal: la inclinación no se puede medir bien, se mantiene el último valor.
+      if (Math.hypot(fgx, fgy) < 3.5) return;
+      let th = Math.atan2(-fgx, fgy) * 180 / Math.PI + ang;
+      th = ((th + 540) % 360) - 180;
+      ultimoAngulo = th;
+      let d = ((th - ceroVolante + 540) % 360) - 180;
+      d = Math.abs(d) < 2 ? 0 : d - Math.sign(d) * 2; // zona muerta sin salto
+      const max = 100 / opt.sens;                  // sensibilidad 5 = giro completo a 20°
+      const s = sticks.L;
+      s.gx = paso((opt.invX ? -d : d) / max); s.gy = 0;
+      programar();
+    } else if (opt.giro === "a") {
+      const r = e.rotationRate;
+      if (!r || r.beta === null) return;
+      const a = ang * Math.PI / 180;
+      const h = r.gamma * Math.cos(a) + r.beta * Math.sin(a);   // girar a los costados
+      const v = r.beta * Math.cos(a) - r.gamma * Math.sin(a);   // inclinar arriba/abajo
+      fH += (h - fH) * SUAVE_A; fV += (v - fV) * SUAVE_A;
+      // Zona muerta "suave": se ignora el temblor de la mano y no hay salto al salir de ella.
+      const zm = (x) => Math.abs(x) < 4 ? 0 : x - Math.sign(x) * 4;
+      const giroH = zm(fH), giroV = zm(fV);
+      const k = opt.sens / 150;
+      const s = sticks.R;
+      s.gx = paso((opt.invX ? giroH : -giroH) * k);
+      s.gy = paso((opt.invY ? -giroV : giroV) * k);
+      programar();
+    }
+  }
+  function aplicarGiro() {
+    window.removeEventListener("devicemotion", alMover);
+    hayFiltro = false; fH = fV = 0;
+    for (const k in sticks) sticks[k].gx = sticks[k].gy = 0;
+    document.querySelectorAll(".stick.giro").forEach((e) => e.classList.remove("giro"));
+    programar();
+    if (opt.giro !== "0") {
+      window.addEventListener("devicemotion", alMover);
+      const s = sticks[opt.giro === "v" ? "L" : "R"];
+      if (s.el) s.el.classList.add("giro");
+    }
+    $("centrar").hidden = opt.giro !== "v";
+  }
+
+  // ---------- Toques ----------
+  function alTocar(e) {
+    if (editando) { edTocar(e); return; }
+    const el = e.target.closest(".stick, [data-dpad], [data-b], [data-t], .menuBtn");
+    if (!el) return;
+    e.preventDefault();
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+    if (el.classList.contains("menuBtn")) { abrirMenu(); return; }
+    if (el.classList.contains("stick")) {
+      const s = sticks[el.dataset.s], r = el.getBoundingClientRect();
+      if (s.el !== el) { s.el = el; s.perilla = el.firstElementChild; s.radioVis = 1; } // puede haber dos del mismo lado
+      s.cx = r.left + r.width / 2; s.cy = r.top + r.height / 2; s.r = r.width / 2 - s.perilla.offsetWidth / 4;
+      s.dedo = true;
+      el.classList.add("on");
+      dedos.set(e.pointerId, { tipo: "s", s });
+      moverStick(s, e.clientX, e.clientY);
+    } else if (el.hasAttribute("data-dpad")) {
+      if (dp && dp !== el) ponerCruceta(new Set());
+      dp = el;
+      dedos.set(e.pointerId, { tipo: "d" });
+      cruceta(e.clientX, e.clientY);
+    } else {
+      dedos.set(e.pointerId, { tipo: "b", el });
+      boton(el, true);
+    }
+  }
+  function alMoverDedo(e) {
+    if (editando) { edMover(e); return; }
+    const d = dedos.get(e.pointerId);
+    if (!d) return;
+    if (d.tipo === "s") moverStick(d.s, e.clientX, e.clientY);
+    else if (d.tipo === "d") cruceta(e.clientX, e.clientY);
+    else if (d.el.dataset.g) {
+      // Deslizar entre A/B/X/Y sin levantar el dedo
+      const otro = document.elementFromPoint(e.clientX, e.clientY);
+      const nuevo = otro && otro.closest("[data-g]");
+      if (nuevo && nuevo !== d.el && nuevo.dataset.g === d.el.dataset.g) {
+        boton(nuevo, true); boton(d.el, false); d.el = nuevo; // primero apretar, así A no se corta
+      }
+    }
+  }
+  function fin(e) {
+    if (editando) { edFin(e); return; }
+    const d = dedos.get(e.pointerId);
+    if (!d) return;
+    dedos.delete(e.pointerId);
+    if (d.tipo === "s") { d.s.el.classList.remove("on"); d.s.dedo = false; d.s.x = 0; d.s.y = 0; programar(); }
+    else if (d.tipo === "d") ponerCruceta(new Set());
+    else boton(d.el, false);
+  }
+  document.querySelectorAll(".control").forEach((c) => {
+    c.addEventListener("pointerdown", alTocar);
+    c.addEventListener("pointermove", alMoverDedo);
+    c.addEventListener("pointerup", fin);
+    c.addEventListener("pointercancel", fin);
+  });
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  function soltarTodo(avisar) {
+    dedos.clear(); cuenta = {};
+    document.querySelectorAll(".on").forEach((e) => e.classList.remove("on"));
+    dpActual = new Set();
+    for (const k in sticks) {
+      const s = sticks[k];
+      s.dedo = false; s.x = s.y = s.gx = s.gy = s.enviadoX = s.enviadoY = 0;
+      if (s.perilla) s.perilla.style.transform = "";
+    }
+    if (avisar) enviar("r");
+  }
+
+  // ---------- Pantalla encendida (solo con HTTPS) ----------
+  let bloqueo = null;
+  async function mantenerEncendida() {
+    if (!("wakeLock" in navigator) || bloqueo) return;
+    try { bloqueo = await navigator.wakeLock.request("screen"); bloqueo.onrelease = () => bloqueo = null; } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) soltarTodo(true); else mantenerEncendida();
+  });
+
+  // ---------- Menú, pantalla completa e instalar ----------
+  function pantallaCompleta() {
+    const d = document.documentElement;
+    if (!document.fullscreenElement && d.requestFullscreen) {
+      d.requestFullscreen({ navigationUI: "hide" }).then(() => {
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
+      }).catch(() => {});
+    }
+  }
+  function abrirMenu() {
+    soltarTodo(true);
+    $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego;
+    $("optGiro").value = opt.giro; $("optSens").value = opt.sens;
+    $("optInvX").checked = opt.invX; $("optInvY").checked = opt.invY;
+    $("menu").classList.add("ver");
+  }
+  const casilla = (id, clave) => $(id).onchange = (e) => { opt[clave] = e.target.checked; guardar(clave, opt[clave] ? "1" : "0"); };
+  casilla("optToque", "toque"); casilla("optJuego", "juego"); casilla("optInvX", "invX"); casilla("optInvY", "invY");
+  $("optJuego").addEventListener("change", () => { if (!opt.juego && puedeVibrar) navigator.vibrate(0); });
+  $("optGiro").onchange = (e) => { opt.giro = e.target.value; guardar("giro", opt.giro); aplicarGiro(); };
+  $("optSens").oninput = (e) => { opt.sens = +e.target.value; guardar("sens", String(opt.sens)); };
+  $("centrar").onclick = () => { ceroVolante = ultimoAngulo; };
+  $("pantalla").onclick = () => { pantallaCompleta(); $("menu").classList.remove("ver"); };
+  $("cerrar").onclick = () => $("menu").classList.remove("ver");
+
+  if (!seguro) {
+    // Sin HTTPS el navegador no deja usar el giroscopio ni instalar la app.
+    $("giroOpts").hidden = true; $("activar").hidden = false; opt.giro = "0";
+  }
+  let pedidoInstalar = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); pedidoInstalar = e; $("instalar").hidden = false; });
+  window.addEventListener("appinstalled", () => { $("instalar").hidden = true; });
+  $("instalar").onclick = async () => {
+    if (!pedidoInstalar) return;
+    pedidoInstalar.prompt();
+    await pedidoInstalar.userChoice.catch(() => {});
+    pedidoInstalar = null; $("instalar").hidden = true;
+  };
+  if (seguro && "serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+
+  // El primer toque en el control pasa a pantalla completa (el navegador lo exige así).
+  document.addEventListener("pointerdown", () => { pantallaCompleta(); mantenerEncendida(); }, { once: true });
+
+  // ---------- Modelo de control ----------
+  // Todos los controles (completo, alargado y los de cada juego) se dibujan desde una lista de elementos
+  // (ver plantillas.js). Si el usuario lo editó, se usa su versión guardada en "control_<clave>".
+  const TIPOS = ["carreras", "disparos", "plataformas", "deportes", "pelea", "accion"];
+  let juegoElegido = null, especActual = null;
+  try { juegoElegido = JSON.parse(leer("juegoElegido", "null")); } catch (e) {}
+  const copiar = (o) => JSON.parse(JSON.stringify(o));
+
+  function plantillaDe(j) {
+    const t = leer("tipo_" + j.id, null);
+    if (PERFILES[j.id] && (!t || t === "perfil")) return PERFILES[j.id];
+    return PLANTILLAS[t] || PLANTILLAS[j.tipo] || PLANTILLAS.accion;
+  }
+  const claveActual = () => (opt.modelo === "juego" && juegoElegido ? "juego_" + juegoElegido.id : opt.modelo);
+  function especBase(clave) {
+    if (BASES[clave]) return BASES[clave];
+    return juegoElegido ? plantillaDe(juegoElegido) : BASES.completo;
+  }
+  function especDe(clave) {
+    try { const c = JSON.parse(leer("control_" + clave, "null")); if (c && Array.isArray(c.el)) return c; } catch (e) {}
+    return especBase(clave);
+  }
+
+  function ponerModelo(m) {
+    if (!["completo", "alargado", "juego"].includes(m) || (m === "juego" && !juegoElegido)) m = "completo";
+    soltarTodo(true);
+    opt.modelo = m; guardar("modelo", m);
+    especActual = especDe(claveActual());
+    dibujarControl(especActual);
+    $("pad3").hidden = false;
+    document.querySelectorAll(".modelo").forEach((b) => b.classList.toggle("elegido", b.dataset.m === m));
+    $("filaTipo").hidden = m !== "juego";
+  }
+  document.querySelectorAll(".modelo").forEach((b) => b.onclick = () => {
+    if (b.dataset.m === "juego") { abrirLista(); return; }
+    ponerModelo(b.dataset.m); $("menu").classList.remove("ver");
+  });
+
+  function dibujarControl(espec) {
+    const pad = $("pad3");
+    pad.textContent = "";
+    pad.classList.toggle("forma-alargado", espec.forma === "alargado");
+    const nuevo = (cls, e) => {
+      const d = document.createElement("div");
+      d.className = "el " + cls;
+      d.style.left = e.x + "%"; d.style.top = e.y + "%";
+      pad.appendChild(d);
+      return d;
+    };
+    const medir = (d, w, h) => { d.style.width = w + "vh"; d.style.height = h + "vh"; };
+    espec.el.forEach((e, i) => {
+      let d;
+      if (e.k === "stick") {
+        d = nuevo("stick", e); d.dataset.s = e.s; medir(d, e.d, e.d);
+        const p = document.createElement("div"); p.className = "perilla";
+        const pd = e.d * 0.44;
+        p.style.width = p.style.height = pd + "vh"; p.style.margin = `-${pd / 2}vh 0 0 -${pd / 2}vh`;
+        d.appendChild(p);
+      } else if (e.k === "dpad") {
+        d = nuevo("dpad", e); d.setAttribute("data-dpad", ""); medir(d, e.d, e.d);
+        d.innerHTML = '<div class="centro"></div><div class="tecla" data-d="UP">▲</div><div class="tecla" data-d="DOWN">▼</div>' +
+                      '<div class="tecla" data-d="LEFT">◀</div><div class="tecla" data-d="RIGHT">▶</div>';
+        d.querySelectorAll(".tecla").forEach((t) => t.style.fontSize = (e.d * 0.11) + "vh");
+      } else if (e.k === "btn") {
+        d = nuevo("tecla", e);
+        const w = e.d || e.w, h = e.d || e.h, txt = e.txt || "";
+        medir(d, w, h);
+        d.style.borderRadius = e.d ? "50%" : (Math.min(w, h) / 2) + "vh";
+        d.style.fontSize = (e.f || Math.max(2.4, Math.min(h * 0.3, w * (txt.length > 3 ? 0.16 : 0.3)))) + "vh";
+        if (e.b) d.dataset.b = e.b;
+        if (e.t) d.dataset.t = e.t;
+        if (e.g) d.dataset.g = e.g;
+        if (e.c === "W") d.classList.add("blanca");
+        else if (e.c) { d.classList.add("color"); d.style.setProperty("--c", `var(--${e.c})`); }
+        d.textContent = txt;
+        if (e.sub) { const s = document.createElement("span"); s.className = "sub"; s.textContent = e.sub; d.appendChild(s); }
+      } else return;
+      d.dataset.i = i;
+    });
+    const b = espec.barra || { x: 50, y: 9 };
+    const barra = nuevo("barra3" + (b.v ? " v" : ""), b);
+    barra.innerHTML = '<div class="punto"></div><div class="tecla menuBtn">☰</div>';
+    if (opt.modelo === "juego" && juegoElegido) {
+      const n = nuevo("nombreJuego", { x: 50, y: 20 }); n.textContent = juegoElegido.nombre;
+    }
+    puntos(listo);
+    enlazarSticks(pad);
+    aplicarGiro();
+  }
+
+  function ponerJuego(j, mostrar = true) {
+    juegoElegido = j; guardar("juegoElegido", JSON.stringify(j));
+    $("juegoActual").textContent = j.nombre;
+    $("tipoNombre").textContent = j.nombre;
+    const sel = $("optTipo"); sel.textContent = "";
+    const opcion = (v, txt) => { const o = document.createElement("option"); o.value = v; o.textContent = txt; sel.appendChild(o); };
+    if (PERFILES[j.id]) opcion("perfil", PERFILES[j.id].nombre);
+    for (const t of TIPOS) opcion(t, PLANTILLAS[t].nombre + (t === j.tipo ? " (sugerido)" : ""));
+    sel.value = PERFILES[j.id] && (leer("tipo_" + j.id, "perfil") === "perfil") ? "perfil" : (leer("tipo_" + j.id, null) || j.tipo);
+    if (mostrar) ponerModelo("juego");
+  }
+  $("optTipo").onchange = (e) => {
+    if (!juegoElegido) return;
+    guardar("tipo_" + juegoElegido.id, e.target.value);
+    guardar("control_juego_" + juegoElegido.id, null); // otro tipo = empezar de nuevo (se descarta la edición)
+    ponerJuego(juegoElegido);
+  };
+
+  // ---------- Editor de control ----------
+  let editando = false, edEspec = null, edSel = -1, edArrastre = null, edEsBase = false;
+  const COLORES = [["", "var(--tecla)", "Gris"], ["W", "#fff", "Blanco"], ["A", "var(--A)", "Verde"], ["B", "var(--B)", "Rojo"],
+                   ["X", "var(--X)", "Azul"], ["Y", "var(--Y)", "Amarillo"], ["V", "var(--V)", "Violeta"],
+                   ["N", "var(--N)", "Naranja"], ["K", "var(--K)", "Negro"]];
+  const FUNCIONES = [["b:A", "A"], ["b:B", "B"], ["b:X", "X"], ["b:Y", "Y"], ["b:LB", "LB"], ["b:RB", "RB"],
+                     ["t:L", "LT"], ["t:R", "RT"], ["t:R+b:A", "RT + A (derrape)"], ["t:L+b:A", "LT + A"],
+                     ["b:START", "Start"], ["b:BACK", "Select"], ["b:GUIDE", "Guide ●"],
+                     ["b:LS", "L3 (apretar stick izq.)"], ["b:RS", "R3 (apretar stick der.)"],
+                     ["b:UP", "Cruceta ▲"], ["b:DOWN", "Cruceta ▼"], ["b:LEFT", "Cruceta ◀"], ["b:RIGHT", "Cruceta ▶"]];
+  const corto = (v) => (FUNCIONES.find((f) => f[0] === v) || [, ""])[1].split(" (")[0];
+  const funcionDe = (e) => e.t && e.b ? `t:${e.t}+b:${e.b}` : e.t ? "t:" + e.t : "b:" + e.b;
+
+  (() => { // armar los selectores del panel una sola vez
+    const cont = $("edColores");
+    for (const [v, css, nombre] of COLORES) {
+      const b = document.createElement("button");
+      b.className = "sw"; b.dataset.color = v; b.title = nombre; b.style.background = css;
+      cont.appendChild(b);
+    }
+    const sel = $("edFuncion");
+    for (const [v, txt] of FUNCIONES) { const o = document.createElement("option"); o.value = v; o.textContent = txt; sel.appendChild(o); }
+  })();
+
+  function entrarEditor() {
+    $("menu").classList.remove("ver");
+    soltarTodo(true);
+    editando = true; edEsBase = false;
+    edEspec = copiar(especActual);
+    $("pad3").classList.add("editando");
+    $("edArriba").hidden = $("edPanel").hidden = false;
+    dibujarControl(edEspec);
+    seleccionar(-1);
+  }
+  function salirEditor() {
+    editando = false; edArrastre = null; edSel = -1;
+    $("pad3").classList.remove("editando");
+    $("edArriba").hidden = $("edPanel").hidden = true;
+    dibujarControl(especActual);
+  }
+  function redibujar() { dibujarControl(edEspec); seleccionar(edSel); }
+  function cambio() { edEsBase = false; }
+
+  function seleccionar(i) {
+    edSel = i;
+    document.querySelectorAll("#pad3 .elegidoEd").forEach((x) => x.classList.remove("elegidoEd"));
+    const e = edEspec.el[i];
+    $("edAyuda").hidden = !!e;
+    document.querySelectorAll("#edPanel .edSel").forEach((x) => x.hidden = !e);
+    if (!e) return;
+    const d = document.querySelector(`#pad3 [data-i="${i}"]`);
+    if (d) d.classList.add("elegidoEd");
+    document.querySelectorAll("#edPanel .soloBtn").forEach((x) => x.hidden = e.k !== "btn");
+    document.querySelectorAll("#edPanel .soloStick").forEach((x) => x.hidden = e.k !== "stick");
+    if (e.k === "btn") {
+      document.querySelectorAll("#edColores .sw").forEach((s) => s.classList.toggle("si", s.dataset.color === (e.c || "")));
+      const f = funcionDe(e), sel = $("edFuncion");
+      if (![...sel.options].some((o) => o.value === f)) {
+        const o = document.createElement("option"); o.value = f; o.textContent = f; sel.appendChild(o);
+      }
+      sel.value = f;
+      if (document.activeElement !== $("edTexto")) $("edTexto").value = e.txt || "";
+      if (document.activeElement !== $("edSub")) $("edSub").value = e.sub || "";
+    } else if (e.k === "stick") $("edStick").value = e.s;
+  }
+
+  const lim = (v, a, b) => Math.round(Math.min(b, Math.max(a, v)) * 2) / 2;
+  function escalar(e, f, soloAncho) {
+    if (soloAncho) {
+      if (e.d) { e.w = e.d; e.h = e.d; delete e.d; }
+      e.w = lim(e.w * f, 6, 95);
+      return;
+    }
+    if (e.d) e.d = lim(e.d * f, 6, 80);
+    else { e.w = lim(e.w * f, 6, 95); e.h = lim(e.h * f, 5, 70); }
+    if (e.f) e.f = lim(e.f * f, 2, 16);
+  }
+
+  const ACCIONES = {
+    mas: () => escalar(edEspec.el[edSel], 1.12),
+    menos: () => escalar(edEspec.el[edSel], 1 / 1.12),
+    ancho: () => escalar(edEspec.el[edSel], 1.15, true),
+    angosto: () => escalar(edEspec.el[edSel], 1 / 1.15, true),
+    forma: () => {
+      const e = edEspec.el[edSel];
+      if (e.d) { e.w = lim(e.d * 1.7, 6, 95); e.h = lim(e.d * 0.75, 5, 70); delete e.d; }
+      else { e.d = lim((e.w + e.h) / 2, 6, 80); delete e.w; delete e.h; }
+    },
+    duplicar: () => {
+      const c = copiar(edEspec.el[edSel]);
+      c.x = lim(c.x + 6, 0, 100); c.y = lim(c.y + 8, 0, 100);
+      edEspec.el.push(c); edSel = edEspec.el.length - 1;
+    },
+    borrar: () => { edEspec.el.splice(edSel, 1); edSel = -1; },
+    addBtn: () => { edEspec.el.push({ k: "btn", x: 50, y: 50, d: 16, b: "A", txt: "A", c: "W" }); edSel = edEspec.el.length - 1; },
+    addStick: () => { edEspec.el.push({ k: "stick", s: "R", x: 50, y: 55, d: 30 }); edSel = edEspec.el.length - 1; },
+    addDpad: () => { edEspec.el.push({ k: "dpad", x: 50, y: 55, d: 28 }); edSel = edEspec.el.length - 1; },
+  };
+  document.querySelectorAll("[data-ed]").forEach((b) => b.onclick = () => {
+    const a = b.dataset.ed;
+    if (a === "guardar") {
+      const clave = claveActual();
+      guardar("control_" + clave, edEsBase ? null : JSON.stringify(edEspec));
+      especActual = edEsBase ? especBase(clave) : edEspec;
+      salirEditor(); return;
+    }
+    if (a === "cancelar") { salirEditor(); return; }
+    if (a === "invertir") { document.body.classList.toggle("edInv"); return; }
+    if (a === "restaurar") { edEspec = copiar(especBase(claveActual())); edSel = -1; redibujar(); edEsBase = true; return; }
+    if (ACCIONES[a] && (edSel >= 0 || a.startsWith("add"))) { ACCIONES[a](); cambio(); redibujar(); }
+  });
+  $("edColores").onclick = (ev) => {
+    const s = ev.target.closest(".sw"); if (!s || edSel < 0) return;
+    const e = edEspec.el[edSel];
+    if (s.dataset.color) e.c = s.dataset.color; else delete e.c;
+    cambio(); redibujar();
+  };
+  $("edFuncion").onchange = (ev) => {
+    const e = edEspec.el[edSel], viejo = funcionDe(e), v = ev.target.value;
+    delete e.b; delete e.t;
+    for (const parte of v.split("+")) { const [k, val] = parte.split(":"); e[k] = val; }
+    if (!e.txt || e.txt === corto(viejo)) e.txt = corto(v); // si tenía el nombre del botón, se actualiza
+    cambio(); redibujar();
+  };
+  $("edTexto").oninput = (ev) => { edEspec.el[edSel].txt = ev.target.value; cambio(); redibujar(); };
+  $("edSub").oninput = (ev) => {
+    const e = edEspec.el[edSel]; if (ev.target.value) e.sub = ev.target.value; else delete e.sub;
+    cambio(); redibujar();
+  };
+  $("edStick").onchange = (ev) => { edEspec.el[edSel].s = ev.target.value; cambio(); redibujar(); };
+  $("editor").onclick = entrarEditor;
+
+  // Tocar y arrastrar en modo edición (no se manda nada a la PC).
+  function edTocar(e) {
+    const el = e.target.closest("[data-i]");
+    if (!el) { seleccionar(-1); return; }
+    e.preventDefault();
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+    const i = +el.dataset.i, r = $("pad3").getBoundingClientRect();
+    seleccionar(i);
+    edArrastre = { id: e.pointerId, el, e: edEspec.el[i], x0: e.clientX, y0: e.clientY,
+                   ex: edEspec.el[i].x, ey: edEspec.el[i].y, w: r.width, h: r.height };
+  }
+  function edMover(e) {
+    const a = edArrastre;
+    if (!a || a.id !== e.pointerId) return;
+    a.e.x = lim(a.ex + (e.clientX - a.x0) / a.w * 100, 0, 100);
+    a.e.y = lim(a.ey + (e.clientY - a.y0) / a.h * 100, 0, 100);
+    a.el.style.left = a.e.x + "%"; a.el.style.top = a.e.y + "%";
+    if (a.e.x !== a.ex || a.e.y !== a.ey) { cambio(); document.body.classList.add("arrastrando"); }
+  }
+  function edFin(e) {
+    if (edArrastre && edArrastre.id === e.pointerId) edArrastre = null;
+    document.body.classList.remove("arrastrando");
+  }
+
+  // La PC avisa qué juego está abierto. Si la opción automática está prendida y es un juego nuevo, se cambia solo.
+  let abiertoEnPC = 0;
+  function juegoAbiertoEnPC(id, tipo, nombre) {
+    abiertoEnPC = id;
+    if (!id || !opt.auto || String(id) === leer("ultimoAuto", "")) return;
+    guardar("ultimoAuto", String(id));
+    if (!TIPOS.includes(tipo)) tipo = "accion";
+    ponerJuego({ id, tipo, nombre });
+  }
+
+  async function abrirLista() {
+    $("menu").classList.remove("ver");
+    $("lista").classList.add("ver");
+    $("optAuto").checked = opt.auto;
+    const grid = $("juegosGrid"), estado = $("estadoLista");
+    grid.textContent = ""; estado.textContent = "Cargando tus juegos…";
+    try {
+      const r = await fetch(`/juegos?t=${encodeURIComponent(token || "")}`, { cache: "no-store" });
+      if (!r.ok) throw new Error();
+      const datos = await r.json();
+      const lista = datos.juegos.sort((a, b) => (b.id === datos.abierto) - (a.id === datos.abierto));
+      estado.textContent = lista.length ? "" : "No encontré juegos de Steam instalados en la PC.";
+      for (const j of lista) {
+        const b = document.createElement("button");
+        b.className = "juego" + (j.id === datos.abierto ? " abierto" : "");
+        const img = document.createElement("img");
+        img.loading = "lazy"; img.decoding = "async"; img.alt = "";
+        img.src = `/portada/${j.id}?t=${encodeURIComponent(token)}`;
+        img.onerror = () => { img.replaceWith(Object.assign(document.createElement("div"), { className: "sinFoto" })); };
+        const n = document.createElement("div"); n.className = "n"; n.textContent = j.nombre;
+        const t = document.createElement("div"); t.className = "t";
+        t.textContent = PERFILES[j.id] ? PERFILES[j.id].nombre : (PLANTILLAS[j.tipo] || PLANTILLAS.accion).nombre;
+        b.append(img, n, t);
+        if (j.id === datos.abierto) {
+          const badge = document.createElement("span"); badge.className = "badge"; badge.textContent = "Abierto ahora";
+          b.appendChild(badge);
+        }
+        b.onclick = () => { ponerJuego(j); $("lista").classList.remove("ver"); };
+        grid.appendChild(b);
+      }
+    } catch (e) {
+      estado.textContent = "No pude traer la lista. ¿Está conectado el control (puntito verde)?";
+    }
+  }
+  $("listaCerrar").onclick = () => $("lista").classList.remove("ver");
+  $("optAuto").onchange = (e) => { opt.auto = e.target.checked; guardar("auto", opt.auto ? "1" : "0"); };
+
+  // ---------- Arranque ----------
+  if (juegoElegido) ponerJuego(juegoElegido, false); // deja dibujado el control del último juego
+  ponerModelo(leer("modelo", "completo"));
+  aplicarGiro();
+  if (token) conectar(token); else pedirCodigo();
+})();
+</script>
+</body>
+</html>

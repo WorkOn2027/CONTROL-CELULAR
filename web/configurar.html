@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#eceef1">
+<title>Configurar Control Celular</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: #eceef1; color: #3d444d;
+         font: 17px/1.5 system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .caja { background: #fbfbfc; border: 1px solid #dfe2e6; border-radius: 18px; padding: 16px 18px; margin: 14px 0; }
+  .n { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; background: #3a72c4; color: #fff;
+       align-items: center; justify-content: center; font-weight: 700; margin-right: 8px; }
+  a.boton, button { display: block; width: 100%; text-align: center; padding: 14px; margin-top: 12px;
+       border-radius: 14px; border: 0; background: #3a72c4; color: #fff; font: 600 18px system-ui, sans-serif;
+       text-decoration: none; }
+  a.sec { background: #e4e7eb; color: #3d444d; }
+  ol { padding-left: 22px; margin: 8px 0 0; } li { margin: 4px 0; }
+  #estado { font-weight: 700; }
+  #estado.ok { color: #3c9a5f; } #estado.no { color: #b8792a; }
+  small { color: #6b737d; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Control Celular</h1>
+  <div>Esto se hace <b>una sola vez</b>. Hace falta para que el control se pueda instalar como app y para usar el giroscopio.</div>
+
+  <div class="caja">Certificado: <span id="estado">revisando…</span></div>
+
+  <div class="caja">
+    <span class="n">1</span><b>Descargá el certificado</b>
+    <a class="boton" href="/ca.crt" download="control-celular-ca.crt">Descargar certificado</a>
+  </div>
+
+  <div class="caja">
+    <span class="n">2</span><b>Instalalo en Ajustes</b>
+    <ol>
+      <li>Abrí <b>Ajustes</b> y buscá <b>«certificado de CA»</b> (con la lupa de arriba).</li>
+      <li>Entrá a <b>Instalar certificado</b> → <b>Certificado de CA</b>.</li>
+      <li>Si avisa que es riesgoso, tocá <b>Instalar de todas formas</b>.</li>
+      <li>Elegí <b>control-celular-ca.crt</b> (está en Descargas).</li>
+    </ol>
+    <small>Según la marca, el camino suele ser Seguridad → Más ajustes → Cifrado y credenciales.
+      Android puede pedirte tener un bloqueo de pantalla (PIN o patrón). Puede aparecer un aviso de
+      «la red podría estar supervisada»: es normal con certificados propios. Este solo sirve para direcciones
+      de tu red de casa, no para sitios de internet.</small>
+  </div>
+
+  <div class="caja">
+    <span class="n">3</span><b>Volvé acá</b>
+    <div>Cuando el certificado esté instalado, esta página lo detecta sola y te lleva al control.
+      Ahí, en el menú ☰, vas a poder <b>instalar la app</b>.</div>
+    <a class="boton sec" id="ir" href="#">Ir al control</a>
+  </div>
+
+  <div class="caja"><small>¿No querés instalar nada? Podés usar el
+    <a href="/index.html">control sin app ni giroscopio</a> igual.</small></div>
+</main>
+<script>
+  const seguro = `https://${location.hostname}:8443/`;
+  document.getElementById("ir").href = seguro;
+  const estado = document.getElementById("estado");
+  let yaFue = false;
+  async function revisar() {
+    try {
+      await fetch(seguro + "ping", { mode: "no-cors", cache: "no-store" });
+      estado.textContent = "instalado ✓"; estado.className = "ok";
+      if (!yaFue) { yaFue = true; setTimeout(() => location.href = seguro, 800); }
+    } catch (e) {
+      estado.textContent = "todavía no está instalado"; estado.className = "no";
+      setTimeout(revisar, 3000);
+    }
+  }
+  revisar();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !yaFue) revisar(); });
+</script>
+</body>
+</html>

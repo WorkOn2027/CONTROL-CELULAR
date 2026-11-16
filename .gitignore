@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+# Privado: claves de los certificados y tokens de los celulares emparejados
+certs/
+tokens.json
+# Permisos locales de Claude Code en esta PC
+.claude/settings.local.json
