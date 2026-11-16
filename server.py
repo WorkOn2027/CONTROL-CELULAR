@@ -14,6 +14,8 @@ Protocolo (texto, mensajes cortos):
                   "d <nombre>"           nombre del celular (su modelo), para reconocerlo en las listas
                   "l"                    pedir la lista de otros celulares con ajustes guardados
                   "cp <id>"              copiar los ajustes de otro celular a este
+                  "m <xbox|ds4>"         qué control ve la PC (Xbox 360 o DualShock 4)
+                  "g gx gy gz ax ay az"  giroscopio y acelerómetro (solo DualShock 4, unidades del DS4)
   PC -> celular:  "ok <token>" | "no" | "lleno"   resultado del emparejamiento
                   "espera <segundos>"    demasiados códigos equivocados: esperar antes de reintentar
                   "lc <json>"            lista de otros celulares [{id, nombre, visto}]
@@ -185,15 +187,48 @@ def anotar_fallo(ip: str) -> None:
 
 # ---------- Jugadores (un control virtual por celular) ----------
 
+D4 = vg.DS4_BUTTONS
+BOTONES_DS4 = {  # los nombres del celular son los de Xbox; en DualShock 4 se traducen
+    "A": D4.DS4_BUTTON_CROSS, "B": D4.DS4_BUTTON_CIRCLE, "X": D4.DS4_BUTTON_SQUARE, "Y": D4.DS4_BUTTON_TRIANGLE,
+    "LB": D4.DS4_BUTTON_SHOULDER_LEFT, "RB": D4.DS4_BUTTON_SHOULDER_RIGHT,
+    "BACK": D4.DS4_BUTTON_SHARE, "START": D4.DS4_BUTTON_OPTIONS,
+    "LS": D4.DS4_BUTTON_THUMB_LEFT, "RS": D4.DS4_BUTTON_THUMB_RIGHT,
+}
+ESPECIALES_DS4 = {"GUIDE": vg.DS4_SPECIAL_BUTTONS.DS4_SPECIAL_BUTTON_PS,
+                  "TOUCH": vg.DS4_SPECIAL_BUTTONS.DS4_SPECIAL_BUTTON_TOUCHPAD}
+_DIR = vg.DS4_DPAD_DIRECTIONS
+CRUCETA_DS4 = {  # (arriba, abajo, izquierda, derecha) -> dirección del DualShock 4
+    (1, 0, 0, 0): _DIR.DS4_BUTTON_DPAD_NORTH, (0, 1, 0, 0): _DIR.DS4_BUTTON_DPAD_SOUTH,
+    (0, 0, 1, 0): _DIR.DS4_BUTTON_DPAD_WEST, (0, 0, 0, 1): _DIR.DS4_BUTTON_DPAD_EAST,
+    (1, 0, 0, 1): _DIR.DS4_BUTTON_DPAD_NORTHEAST, (1, 0, 1, 0): _DIR.DS4_BUTTON_DPAD_NORTHWEST,
+    (0, 1, 0, 1): _DIR.DS4_BUTTON_DPAD_SOUTHEAST, (0, 1, 1, 0): _DIR.DS4_BUTTON_DPAD_SOUTHWEST,
+}
+TIPOS_MANDO = ("xbox", "ds4")
+
+
 class Jugador:
-    def __init__(self, numero: int):
+    """Un celular = un control virtual. Puede ser de Xbox 360 o DualShock 4 (lo elige cada celular)."""
+
+    def __init__(self, numero: int, tipo: str = "xbox"):
         self.numero = numero
-        self.pad = vg.VX360Gamepad()
+        self.ws = None
+        self.token = None
+        self.pad = None
+        self.tipo = None
+        self.cambiar_tipo(tipo)
+
+    def cambiar_tipo(self, tipo: str) -> None:
+        if tipo not in TIPOS_MANDO or tipo == self.tipo:
+            return
+        if self.pad is not None:
+            self.soltar()
+            self.pad = None  # al soltarlo, vgamepad lo desenchufa de Windows
+        self.pad = vg.VDS4Gamepad() if tipo == "ds4" else vg.VX360Gamepad()
+        self.tipo = tipo
+        self.cruceta = {"UP": 0, "DOWN": 0, "LEFT": 0, "RIGHT": 0}
         self.pad.reset()
         self.pad.update()  # arrancar con todo en cero (si no, los sticks quedan corridos)
         self.pad.register_notification(callback_function=self._al_vibrar)
-        self.ws = None
-        self.token = None
 
     def _al_vibrar(self, client, target, grande, chico, led, user_data):
         """Lo llama el driver (desde otro hilo) cuando un juego hace vibrar ESTE control."""
@@ -201,8 +236,54 @@ class Jugador:
             loop.call_soon_threadsafe(asyncio.ensure_future, enviar(self.ws, f"v {grande} {chico}"))
 
     def soltar(self) -> None:
+        self.cruceta = {"UP": 0, "DOWN": 0, "LEFT": 0, "RIGHT": 0}
         self.pad.reset()
         self.pad.update()
+
+    def aplicar(self, msg: str) -> None:
+        p = msg.split()
+        if not p:
+            return
+        pad, ds4, tipo = self.pad, self.tipo == "ds4", p[0]
+        if tipo == "b" and len(p) == 3:
+            on, b = p[2] == "1", p[1]
+            if not ds4:
+                if b not in BOTONES:
+                    return
+                (pad.press_button if on else pad.release_button)(BOTONES[b])
+            elif b in self.cruceta:
+                self.cruceta[b] = int(on)
+                c = self.cruceta
+                pad.directional_pad(CRUCETA_DS4.get((c["UP"], c["DOWN"], c["LEFT"], c["RIGHT"]),
+                                                    _DIR.DS4_BUTTON_DPAD_NONE))
+            elif b in ESPECIALES_DS4:
+                (pad.press_special_button if on else pad.release_special_button)(ESPECIALES_DS4[b])
+            elif b in BOTONES_DS4:
+                (pad.press_button if on else pad.release_button)(BOTONES_DS4[b])
+            else:
+                return
+        elif tipo == "t" and len(p) == 3:
+            valor = max(0, min(255, int(p[2])))
+            (pad.left_trigger if p[1] == "L" else pad.right_trigger)(valor)
+            if ds4:  # el DualShock 4 también tiene un "botón" L2/R2 además del valor analógico
+                bit = D4.DS4_BUTTON_TRIGGER_LEFT if p[1] == "L" else D4.DS4_BUTTON_TRIGGER_RIGHT
+                (pad.press_button if valor > 0 else pad.release_button)(bit)
+        elif tipo == "s" and len(p) == 4:
+            x, y = limitar(int(p[2]) / 1000), limitar(int(p[3]) / 1000)
+            if ds4:
+                y = -y  # en el DualShock 4, el eje Y va al revés (positivo = abajo)
+            (pad.left_joystick_float if p[1] == "L" else pad.right_joystick_float)(x, y)
+        elif tipo == "g" and len(p) == 7 and ds4:
+            # Giroscopio y acelerómetro del celular, ya en unidades del DualShock 4 (los calcula el celular).
+            v = [max(-32768, min(32767, int(n))) for n in p[1:]]
+            pad.gyroscope(v[0], v[1], v[2])
+            pad.accelerometer(v[3], v[4], v[5])
+        elif tipo == "r":
+            self.soltar()
+            return
+        else:
+            return
+        pad.update()
 
 
 jugadores: dict[int, Jugador] = {}
@@ -259,32 +340,6 @@ def avisar_conexiones() -> None:
 
 def limitar(v: float) -> float:
     return max(-1.0, min(1.0, v))
-
-
-def aplicar(pad, msg: str) -> None:
-    p = msg.split()
-    if not p:
-        return
-    tipo = p[0]
-    if tipo == "b" and len(p) == 3 and p[1] in BOTONES:
-        if p[2] == "1":
-            pad.press_button(BOTONES[p[1]])
-        else:
-            pad.release_button(BOTONES[p[1]])
-    elif tipo == "t" and len(p) == 3:
-        valor = max(0, min(255, int(p[2])))
-        (pad.left_trigger if p[1] == "L" else pad.right_trigger)(valor)
-    elif tipo == "s" and len(p) == 4:
-        x, y = limitar(int(p[2]) / 1000), limitar(int(p[3]) / 1000)
-        if p[1] == "L":
-            pad.left_joystick_float(x, y)
-        else:
-            pad.right_joystick_float(x, y)
-    elif tipo == "r":
-        pad.reset()
-    else:
-        return
-    pad.update()
 
 
 async def enviar(ws, texto: str) -> None:
@@ -366,7 +421,9 @@ async def atender(ws):
         await viejo.close()
     j.ws, j.token = ws, token
     await ws.send(f"ok {token}")
+    j.cambiar_tipo(celulares[token].get("mando", "xbox"))  # cada celular recuerda si es Xbox o DualShock 4
     await ws.send(f"n {j.numero}")
+    await ws.send(f"m {j.tipo}")
     await ws.send("c " + json.dumps(ajustes_de(token), ensure_ascii=False))
     await ws.send(mensaje_abierto())
     print(f"  Jugador {j.numero} conectado ({celulares[token]['nombre']}):", ip)
@@ -386,13 +443,22 @@ async def atender(ws):
                         celulares[token]["nombre"] = nombre
                         guardar_celulares()
                         avisar_conexiones()
+                elif msg.startswith("m "):  # qué control ve la PC: Xbox 360 o DualShock 4
+                    nuevo = msg[2:].strip()
+                    if nuevo in TIPOS_MANDO and nuevo != j.tipo:
+                        j.cambiar_tipo(nuevo)
+                        celulares[token]["mando"] = nuevo
+                        guardar_celulares()
+                        nombre_mando = "DualShock 4" if nuevo == "ds4" else "Xbox 360"
+                        print(f"  Jugador {j.numero} ahora es un control {nombre_mando}")
+                    await ws.send(f"m {j.tipo}")
                 elif msg == "l":
                     await ws.send("lc " + json.dumps(otros_celulares(token), ensure_ascii=False))
                 elif msg.startswith("cp "):
                     if copiar_ajustes(token, msg[3:].strip()):
                         await ws.send("cc " + json.dumps(ajustes_de(token), ensure_ascii=False))
                 else:
-                    aplicar(j.pad, msg)
+                    j.aplicar(msg)
             except (ValueError, IndexError):
                 pass
     except Exception:

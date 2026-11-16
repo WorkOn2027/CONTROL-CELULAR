@@ -266,6 +266,13 @@
     <label><input type="checkbox" id="optToque"> Vibrar al tocar</label>
     <label><input type="checkbox" id="optJuego"> Vibración del juego</label>
     <label><input type="checkbox" id="optNoche"> Modo noche</label>
+    <label><input type="checkbox" id="optZurdo"> Modo zurdo (dar vuelta el control)</label>
+    <label>La PC lo ve como
+      <select id="optMando">
+        <option value="xbox">Control de Xbox 360</option>
+        <option value="ds4">DualShock 4 (PlayStation)</option>
+      </select>
+    </label>
     <button id="pantalla">Pantalla completa</button>
     <button id="editor">Editor de control</button>
     <button id="verTutorial">Ver tutorial</button>
@@ -277,6 +284,7 @@
         <option value="0">Apagado</option>
         <option value="v">Volante (inclinar → stick izq.)</option>
         <option value="a">Apuntar (mover → stick der.)</option>
+        <option value="m">Movimiento real (solo DualShock 4)</option>
       </select>
     </label>
     <label>Sensibilidad <input type="range" id="optSens" min="1" max="10" step="1"></label>
@@ -334,7 +342,7 @@
   const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const guardarLocal = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
   // Estos ajustes también se guardan en la PC: así cualquier celular (o la misma app con otra IP) los recupera.
-  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto|noche)$|^(dz|curva|alc)[LR]$/;
+  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto|noche|zurdo|mando)$|^(dz|curva|alc)[LR]$/;
   const pendientes = {};
   const guardar = (k, v) => {
     guardarLocal(k, v);
@@ -349,6 +357,8 @@
     invX: leer("invX", "0") === "1", invY: leer("invY", "0") === "1",
     auto: leer("auto", "1") === "1",
     noche: leer("noche", "0") === "1",
+    zurdo: leer("zurdo", "0") === "1",
+    mando: leer("mando", "xbox") === "ds4" ? "ds4" : "xbox",
   };
   // Modo noche: colores oscuros en todo (control, menú, editor). Apagado = control blanco.
   function aplicarNoche() {
@@ -454,6 +464,7 @@
         token = p[1]; guardarLocal("token", token); listo = true;
         $("emparejar").classList.remove("ver"); puntos(true);
         nombreCelular().then((n) => { if (listo && ws.readyState === 1) ws.send("d " + n); });
+        ws.send("m " + opt.mando);
         if (leer("tutorialVisto", "0") !== "1") setTimeout(abrirTutorial, 600);
       } else if (p[0] === "no") {
         if (token && clave === token) { token = null; guardarLocal("token", null); }
@@ -470,6 +481,12 @@
       } else if (p[0] === "lleno") {
         $("error").textContent = "Ya hay 4 celulares conectados a esta PC.";
         pedirCodigo();
+      } else if (p[0] === "m") {
+        // La PC confirma qué control es (Xbox o DualShock 4): cambian los nombres de los botones.
+        if ((p[1] === "ds4" ? "ds4" : "xbox") !== opt.mando) {
+          opt.mando = p[1] === "ds4" ? "ds4" : "xbox"; guardar("mando", opt.mando);
+          if (!editando && especActual) dibujarControl(especActual);
+        }
       } else if (p[0] === "n") {
         jugador = +p[1]; puntos(true);
       } else if (p[0] === "c") {
@@ -660,6 +677,19 @@
       const s = sticks.L;
       s.gx = paso((opt.invX ? -d : d) / max); s.gy = 0;
       programar();
+    } else if (opt.giro === "m") {
+      // Movimiento real: se manda el giroscopio y el acelerómetro como los de un DualShock 4.
+      if (opt.mando !== "ds4") return;
+      const r = e.rotationRate, g = e.accelerationIncludingGravity;
+      if (!r || !g || r.beta === null || g.x === null) return;
+      const a = ang * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      const aPantalla = (v) => [v[0] * c - v[1] * sn, v[0] * sn + v[1] * c, v[2]];   // celular -> pantalla
+      const aDS4 = (v) => [v[0], v[2], -v[1]];  // pantalla -> DS4 (X derecha, Y sale de la pantalla, Z hacia vos)
+      const giro = aDS4(aPantalla([r.beta, r.gamma, r.alpha])).map((v) => Math.round(v * 16));        // 16 = por °/s
+      const acel = aDS4(aPantalla([g.x, g.y, g.z])).map((v) => Math.round(v / 9.81 * 8192));         // 8192 = 1 g
+      if (opt.invX) giro[1] = -giro[1];
+      if (opt.invY) giro[0] = -giro[0];
+      enviar(`g ${giro.join(" ")} ${acel.join(" ")}`);
     } else if (opt.giro === "a") {
       const r = e.rotationRate;
       if (!r || r.beta === null) return;
@@ -685,8 +715,8 @@
     programar();
     if (opt.giro !== "0") {
       window.addEventListener("devicemotion", alMover);
-      const s = sticks[opt.giro === "v" ? "L" : "R"];
-      if (s.el) s.el.classList.add("giro");
+      const s = opt.giro === "m" ? null : sticks[opt.giro === "v" ? "L" : "R"]; // "m" no usa ningún stick
+      if (s && s.el) s.el.classList.add("giro");
     }
     $("centrar").hidden = opt.giro !== "v";
   }
@@ -785,6 +815,7 @@
   function abrirMenu() {
     soltarTodo(true);
     $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego; $("optNoche").checked = opt.noche;
+    $("optZurdo").checked = opt.zurdo; $("optMando").value = opt.mando;
     mostrarSticks();
     $("optGiro").value = opt.giro; $("optSens").value = opt.sens;
     $("optInvX").checked = opt.invX; $("optInvY").checked = opt.invY;
@@ -793,6 +824,12 @@
   const casilla = (id, clave) => $(id).onchange = (e) => { opt[clave] = e.target.checked; guardar(clave, opt[clave] ? "1" : "0"); };
   casilla("optToque", "toque"); casilla("optJuego", "juego"); casilla("optInvX", "invX"); casilla("optInvY", "invY");
   casilla("optNoche", "noche"); $("optNoche").addEventListener("change", aplicarNoche);
+  casilla("optZurdo", "zurdo"); $("optZurdo").addEventListener("change", () => dibujarControl(especActual));
+  $("optMando").onchange = (e) => {
+    opt.mando = e.target.value; guardar("mando", opt.mando);
+    if (listo && ws.readyState === 1) ws.send("m " + opt.mando); // la PC cambia el control virtual
+    dibujarControl(especActual);
+  };
 
   // ☰ → Sticks: zona muerta, respuesta y recorrido de cada stick (se aplican al instante).
   const DEF_STICK = { dz: "5", curva: "normal", alc: "100" };
@@ -878,14 +915,27 @@
     ponerModelo(b.dataset.m); $("menu").classList.remove("ver");
   });
 
+  // Con DualShock 4, los nombres de Xbox se muestran como los de PlayStation.
+  const NOMBRES_DS4 = { A: "✕", B: "○", X: "□", Y: "△", LB: "L1", RB: "R1", LT: "L2", RT: "R2",
+                        Select: "Share", Start: "Options", "●": "PS" };
+  const nombreBoton = (t) => (opt.mando === "ds4" && NOMBRES_DS4[t]) || t;
+
   function dibujarControl(espec) {
+    // Modo zurdo (no en el editor): todo pasa al otro lado como un espejo, pero los grupos de botones
+    // (el rombo A/B/X/Y, las filas de pelea...) se mueven en bloque, así su orden interno no se invierte.
+    const espejo = opt.zurdo && !editando;
+    const centros = {};
+    for (const e of espec.el) if (e.g) (centros[e.g] = centros[e.g] || []).push(e.x);
+    for (const g in centros) centros[g] = centros[g].length > 1 ? centros[g].reduce((a, b) => a + b) / centros[g].length : null;
+    const xVisible = (e) => !espejo ? e.x : (e.g && centros[e.g] !== null && centros[e.g] !== undefined)
+      ? 100 - centros[e.g] + (e.x - centros[e.g]) : 100 - e.x;
     const pad = $("pad3");
     pad.textContent = "";
     pad.classList.toggle("forma-alargado", espec.forma === "alargado");
     const nuevo = (cls, e) => {
       const d = document.createElement("div");
       d.className = "el " + cls;
-      d.style.left = e.x + "%"; d.style.top = e.y + "%";
+      d.style.left = xVisible(e) + "%"; d.style.top = e.y + "%";
       pad.appendChild(d);
       return d;
     };
@@ -915,8 +965,8 @@
         if (e.modo === "turbo" || e.modo === "fijo") d.dataset.modo = e.modo;
         if (e.c === "W") d.classList.add("blanca");
         else if (e.c) { d.classList.add("color"); d.style.setProperty("--c", `var(--${e.c})`); }
-        d.textContent = txt;
-        if (e.sub) { const s = document.createElement("span"); s.className = "sub"; s.textContent = e.sub; d.appendChild(s); }
+        d.textContent = nombreBoton(txt);
+        if (e.sub) { const s = document.createElement("span"); s.className = "sub"; s.textContent = nombreBoton(e.sub); d.appendChild(s); }
       } else return;
       d.dataset.i = i;
     });
@@ -958,6 +1008,7 @@
                      ["t:L", "LT"], ["t:R", "RT"], ["t:R+b:A", "RT + A (derrape)"], ["t:L+b:A", "LT + A"],
                      ["b:START", "Start"], ["b:BACK", "Select"], ["b:GUIDE", "Guide ●"],
                      ["b:LS", "L3 (apretar stick izq.)"], ["b:RS", "R3 (apretar stick der.)"],
+                     ["b:TOUCH", "Touchpad (solo DualShock 4)"],
                      ["b:UP", "Cruceta ▲"], ["b:DOWN", "Cruceta ▼"], ["b:LEFT", "Cruceta ◀"], ["b:RIGHT", "Cruceta ▶"]];
   const corto = (v) => (FUNCIONES.find((f) => f[0] === v) || [, ""])[1].split(" (")[0];
   const funcionDe = (e) => e.t && e.b ? `t:${e.t}+b:${e.b}` : e.t ? "t:" + e.t : "b:" + e.b;
@@ -1126,7 +1177,7 @@
   function edMover(e) {
     const a = edArrastre;
     if (!a || a.id !== e.pointerId) return;
-    let x = lim(a.ex + (e.clientX - a.x0) / a.w * 100, 0, 100);
+    let x = lim(a.ex + (e.clientX - a.x0) / a.w * 100, 0, 100); // el editor muestra el control al derecho
     let y = lim(a.ey + (e.clientY - a.y0) / a.h * 100, 0, 100);
     if (cuadricula) { x = Math.round(x / 2.5) * 2.5; y = Math.round(y / 2.5) * 2.5; } // se pega a la cuadrícula
     if (x === a.e.x && y === a.e.y) return;

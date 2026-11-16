@@ -124,9 +124,16 @@ iguales.
     mantenés) o **📌 fijo** (un toque lo deja apretado y otro lo suelta; sirve, por ejemplo, para acelerar sin
     tener el dedo encima);
   - mientras editás, no se manda nada a la PC, y cada control guarda su propia edición.
+- **La PC lo ve como:** **control de Xbox 360**, o **DualShock 4** de PlayStation para juegos y emuladores que lo
+  prefieren. Con DualShock 4 los botones se muestran como ✕ ○ □ △, y el editor permite usar el touchpad.
+- **Modo zurdo:** da vuelta el control como un espejo. Los grupos de botones, como el rombo, mantienen su orden.
+  El editor muestra el control al derecho.
 - **Giroscopio:**
   - **Volante:** inclinás el celular y mueve el stick izquierdo.
   - **Apuntar:** movés el celular y mueve el stick derecho.
+  - **Movimiento real** (solo DualShock 4): el celular funciona como el sensor de movimiento de un control de
+    PlayStation. Lo usan Steam (el giroscopio de Steam Input) y emuladores como Cemu o Yuzu. Si un eje te va al
+    revés, usá «invertir».
   - Se ajusta con sensibilidad e invertir.
 - **Vibración:** al tocar los botones, y cuando el juego hace vibrar el control.
 - **Sticks:** para cada stick, por separado:

@@ -1,5 +1,14 @@
 # Novedades
 
+## 1.2.0
+
+- **Modo DualShock 4 (control de PlayStation):** en ☰ → Opciones → «La PC lo ve como» elegís Xbox 360 o
+  DualShock 4. Con DualShock 4, los botones se muestran como ✕ ○ □ △, L1/R1, L2/R2, Share, Options y PS, y se puede
+  usar el **touchpad** desde el editor.
+- **Giroscopio «Movimiento real» (solo DualShock 4):** el celular manda su giroscopio y su acelerómetro como el
+  sensor de un control de PlayStation. Lo usan Steam (el giroscopio de Steam Input) y emuladores como Cemu o Yuzu.
+- **Modo zurdo:** da vuelta el control como un espejo. Los grupos de botones, como el rombo, mantienen su orden.
+
 ## 1.1.0
 
 **Descargá `ControlCelular.exe`** (abajo, en «Assets»). Es un solo archivo y no hace falta instalar nada más. Si Windows
