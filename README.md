@@ -67,6 +67,10 @@ control**, con este menú:
 - **Iniciar con Windows:** arranca solo al prender la PC, oculto, sin la ventana.
 - **Celulares emparejados:** la lista de celulares con permiso para conectarse, para **olvidar** uno o todos. Un
   celular olvidado pierde el permiso y sus ajustes, y para volver a usarlo hay que emparejarlo con el QR.
+- **Versión y desinstalar:**
+  - la versión instalada y el aviso de **versión nueva** (con «Buscar versiones nuevas» lo apagás);
+  - **Desinstalar…**: saca la regla del firewall, el arranque con Windows y tus datos, y te dice qué queda por
+    borrar a mano.
 - **Salir.**
 
 Al pasar el mouse por el ícono, te dice qué jugadores están conectados.
@@ -116,6 +120,9 @@ iguales.
     moverlo;
   - podés agregar botones, sticks y crucetas;
   - tiene **Deshacer** y una **Cuadrícula** para alinear los botones;
+  - cada botón puede ser **normal**, **⚡ turbo** (se aprieta y suelta solo, 10 veces por segundo, mientras lo
+    mantenés) o **📌 fijo** (un toque lo deja apretado y otro lo suelta; sirve, por ejemplo, para acelerar sin
+    tener el dedo encima);
   - mientras editás, no se manda nada a la PC, y cada control guarda su propia edición.
 - **Giroscopio:**
   - **Volante:** inclinás el celular y mueve el stick izquierdo.
@@ -148,7 +155,9 @@ iguales.
 
 ## Seguridad
 
-- Todo funciona **dentro de tu red local**. No se conecta a internet ni manda tu biblioteca de Steam a ningún lado.
+- Todo funciona **dentro de tu red local**. No manda tu biblioteca de Steam ni ningún dato tuyo a ningún lado. Lo
+  único que hace en internet es consultar la página pública de Releases de este proyecto en GitHub, para avisarte si
+  hay una versión nueva; se apaga desde el ícono, en «Buscar versiones nuevas».
 - Para conectarse, un celular tiene que conocer el **código de emparejamiento**, que solo aparece en tu pantalla.
   El QR lleva ese código adentro: por eso la página del QR solo se abre desde la propia PC. El código cambia cada
   vez que abrís el programa.
@@ -169,7 +178,8 @@ iguales.
 | Archivo | Qué hace |
 |---|---|
 | `server.py` | Servidor: crea el control virtual (vgamepad + ViGEmBus), sirve la página y recibe los botones por WebSocket |
-| `bandeja.py` | El ícono al lado del reloj (QR, mostrar u ocultar la ventana, iniciar con Windows, salir) |
+| `bandeja.py` | El ícono al lado del reloj (QR, ventana, iniciar con Windows, celulares, versión, desinstalar, salir) |
+| `version.py` | Número de versión y aviso de versión nueva |
 | `red.py` | Revisa el firewall y si la red es privada; si falta algo, pregunta y lo arregla con permiso de Windows |
 | `rutas.py` | Dónde están los archivos, tanto en Python como en el `.exe` |
 | `certs.py` | Crea el certificado propio para HTTPS en la red local |
@@ -182,3 +192,7 @@ iguales.
 
 Para agregar un control propio para un juego, sumalo en `PERFILES` dentro de `web/plantillas.js` con su número de
 Steam (appid).
+
+## Licencia
+
+[MIT](LICENSE): podés usarlo, cambiarlo y compartirlo, manteniendo el aviso de autoría. Las novedades de cada versión están en [NOVEDADES.md](NOVEDADES.md).

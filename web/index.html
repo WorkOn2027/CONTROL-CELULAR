@@ -97,6 +97,12 @@
   .edBarra .sw.si { box-shadow: 0 0 0 3px var(--X); }
   .edBarra input[type=text] { width: 20vw; }
   .edBarra .sep { width: 1px; align-self: stretch; background: var(--linea); flex: none; }
+  /* Marca chiquita en los botones turbo / fijo */
+  .tecla[data-modo] { position: absolute; }
+  .tecla[data-modo]::after { position: absolute; top: 6%; right: 10%; font-size: max(1.8vh, .28em); font-weight: 800;
+                             opacity: .75; pointer-events: none; }
+  .tecla[data-modo=turbo]::after { content: "⚡"; }
+  .tecla[data-modo=fijo]::after { content: "📌"; }
   .tecla.blanca { background: var(--superficie); border: 2px solid var(--tecla-borde); }
   .tecla.blanca.on { background: var(--on); color: #fff; }
 
@@ -198,6 +204,9 @@
   <span class="grupo edSel soloBtn" id="edColores"></span>
   <span class="sep edSel soloBtn"></span>
   <label class="grupo edSel soloBtn">Manda <select id="edFuncion"></select></label>
+  <label class="grupo edSel soloBtn">Modo <select id="edModo">
+    <option value="">Normal</option><option value="turbo">⚡ Turbo (se repite solo)</option>
+    <option value="fijo">📌 Fijo (un toque aprieta, otro suelta)</option></select></label>
   <label class="grupo edSel soloStick">Es el <select id="edStick"><option value="L">stick izquierdo</option><option value="R">stick derecho</option></select></label>
   <span class="grupo edSel soloBtn"><input id="edTexto" type="text" maxlength="14" placeholder="Texto">
     <input id="edSub" type="text" maxlength="18" placeholder="Texto chico"></span>
@@ -503,10 +512,39 @@
     if (on && n === 1) enviar(msg + (msg[0] === "t" ? " 255" : " 1"));
     else if (!on && n === 0) enviar(msg + " 0");
   }
-  function boton(el, on) {
-    el.classList.toggle("on", on);
+  function mandar(el, on) {
     if (el.dataset.t) pulsar(`t ${el.dataset.t}`, on);
     if (el.dataset.b) pulsar(`b ${el.dataset.b}`, on);
+  }
+  // Modos de botón (se eligen en el editor):
+  //  normal: apretado mientras tenés el dedo.
+  //  turbo:  mientras lo tenés apretado se aprieta y suelta solo, 10 veces por segundo.
+  //  fijo:   un toque lo deja apretado y otro lo suelta (no hace falta mantener el dedo).
+  const turbos = new Map();
+  function boton(el, on) {
+    const modo = el.dataset.modo;
+    if (modo === "fijo") {
+      if (!on) return;
+      const activo = !el.classList.contains("on");
+      el.classList.toggle("on", activo); mandar(el, activo); toque();
+      return;
+    }
+    if (modo === "turbo") {
+      if (on && !turbos.has(el)) {
+        el.classList.add("on"); toque();
+        const t = { abajo: true };
+        mandar(el, true);
+        t.id = setInterval(() => { t.abajo = !t.abajo; mandar(el, t.abajo); }, 50);
+        turbos.set(el, t);
+      } else if (!on && turbos.has(el)) {
+        const t = turbos.get(el); clearInterval(t.id); turbos.delete(el);
+        if (t.abajo) mandar(el, false);
+        el.classList.remove("on");
+      }
+      return;
+    }
+    el.classList.toggle("on", on);
+    mandar(el, on);
     if (on) toque();
   }
 
@@ -665,11 +703,11 @@
     if (!d) return;
     if (d.tipo === "s") moverStick(d.s, e.clientX, e.clientY);
     else if (d.tipo === "d") cruceta(e.clientX, e.clientY);
-    else if (d.el.dataset.g) {
+    else if (d.el.dataset.g && !d.el.dataset.modo) {
       // Deslizar entre A/B/X/Y sin levantar el dedo
       const otro = document.elementFromPoint(e.clientX, e.clientY);
       const nuevo = otro && otro.closest("[data-g]");
-      if (nuevo && nuevo !== d.el && nuevo.dataset.g === d.el.dataset.g) {
+      if (nuevo && nuevo !== d.el && nuevo.dataset.g === d.el.dataset.g && !nuevo.dataset.modo) {
         boton(nuevo, true); boton(d.el, false); d.el = nuevo; // primero apretar, así A no se corta
       }
     }
@@ -693,6 +731,8 @@
 
   function soltarTodo(avisar) {
     dedos.clear(); cuenta = {};
+    for (const t of turbos.values()) clearInterval(t.id);
+    turbos.clear();
     document.querySelectorAll(".on").forEach((e) => e.classList.remove("on"));
     dpActual = new Set();
     for (const k in sticks) {
@@ -829,6 +869,7 @@
         if (e.b) d.dataset.b = e.b;
         if (e.t) d.dataset.t = e.t;
         if (e.g) d.dataset.g = e.g;
+        if (e.modo === "turbo" || e.modo === "fijo") d.dataset.modo = e.modo;
         if (e.c === "W") d.classList.add("blanca");
         else if (e.c) { d.classList.add("color"); d.style.setProperty("--c", `var(--${e.c})`); }
         d.textContent = txt;
@@ -941,6 +982,7 @@
         const o = document.createElement("option"); o.value = f; o.textContent = f; sel.appendChild(o);
       }
       sel.value = f;
+      $("edModo").value = e.modo || "";
       if (document.activeElement !== $("edTexto")) $("edTexto").value = e.txt || "";
       if (document.activeElement !== $("edSub")) $("edSub").value = e.sub || "";
     } else if (e.k === "stick") $("edStick").value = e.s;
@@ -1016,6 +1058,12 @@
   $("edTexto").oninput = (ev) => { edEspec.el[edSel].txt = ev.target.value; cambio(); redibujar(); };
   $("edSub").oninput = (ev) => {
     const e = edEspec.el[edSel]; if (ev.target.value) e.sub = ev.target.value; else delete e.sub;
+    cambio(); redibujar();
+  };
+  $("edModo").onchange = (ev) => {
+    antes();
+    const e = edEspec.el[edSel];
+    if (ev.target.value) e.modo = ev.target.value; else delete e.modo;
     cambio(); redibujar();
   };
   $("edStick").onchange = (ev) => { antes(); edEspec.el[edSel].s = ev.target.value; cambio(); redibujar(); };

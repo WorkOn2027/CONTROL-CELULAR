@@ -45,6 +45,11 @@ def crear_regla() -> bool:
         f"-RemoteAddress LocalSubnet -ErrorAction Stop | Out-Null")
 
 
+def quitar_regla() -> bool:
+    return _como_admin(f"Get-NetFirewallRule -DisplayName '{REGLA}' -ErrorAction Stop | "
+                       f"Remove-NetFirewallRule -ErrorAction Stop")
+
+
 def redes_publicas() -> list[str]:
     """Nombres de las redes conectadas que Windows tiene como 'Públicas'."""
     salida = _ps("Get-NetConnectionProfile | Where-Object NetworkCategory -eq 'Public' | "

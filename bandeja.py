@@ -5,6 +5,8 @@ Al pasar el mouse muestra cuántos celulares hay conectados.
 """
 
 import ctypes
+import json
+import shutil
 import sys
 import threading
 import webbrowser
@@ -14,7 +16,31 @@ from pathlib import Path
 import pystray
 from PIL import Image
 
+import red
 import rutas
+import version
+
+CONFIG = rutas.DATOS / "config.json"
+
+
+def leer_config() -> dict:
+    try:
+        return json.loads(CONFIG.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def guardar_config(clave: str, valor) -> None:
+    c = leer_config()
+    c[clave] = valor
+    try:
+        CONFIG.write_text(json.dumps(c), "utf-8")
+    except OSError:
+        pass
+
+
+def buscar_versiones_activado() -> bool:
+    return leer_config().get("buscarVersiones", True)
 
 CLAVE_INICIO = r"Software\Microsoft\Windows\CurrentVersion\Run"
 NOMBRE_INICIO = "ControlCelular"
@@ -86,6 +112,46 @@ def confirmar(texto: str) -> bool:
     return _u32.MessageBoxW(None, texto, "Control Celular", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST) == IDYES
 
 
+def avisar_cartel(texto: str) -> None:
+    MB_OK, MB_ICONINFORMATION, MB_TOPMOST = 0x0, 0x40, 0x40000
+    _u32.MessageBoxW(None, texto, "Control Celular", MB_OK | MB_ICONINFORMATION | MB_TOPMOST)
+
+
+# ---------- Desinstalar ----------
+
+def desinstalar(al_salir) -> None:
+    """Deja la PC como estaba: saca la regla del firewall, el arranque con Windows y (en el .exe) los datos."""
+    datos = ("tus datos (certificado, celulares emparejados y ajustes guardados)" if rutas.EMPAQUETADO else
+             "nada más: como lo usás con Python, tus datos quedan en la carpeta del proyecto")
+    if not confirmar("¿Desinstalar Control Celular de esta PC?\n\nSe va a sacar:\n"
+                     "  • la regla del firewall (Windows pide permiso)\n"
+                     "  • el arranque con Windows\n"
+                     f"  • {datos}\n\nDespués el programa se cierra."):
+        return
+    hechos, fallos = [], []
+    if red.regla_existe():
+        (hechos if red.quitar_regla() else fallos).append("la regla del firewall")
+    cambiar_inicio(False)
+    hechos.append("el arranque con Windows")
+    if rutas.EMPAQUETADO:
+        try:
+            shutil.rmtree(rutas.DATOS)
+            hechos.append("tus datos")
+        except OSError:
+            fallos.append(f"la carpeta {rutas.DATOS}")
+    texto = "Listo. Se sacó: " + ", ".join(hechos) + "."
+    if fallos:
+        texto += "\nNo se pudo sacar: " + ", ".join(fallos) + "."
+    texto += ("\n\nPara terminar, si querés:\n"
+              "  • Borrá ControlCelular.exe (o la carpeta del proyecto).\n"
+              "  • ViGEmBus se desinstala desde Configuración > Aplicaciones (\"Nefarius Virtual Gamepad "
+              "Emulation Bus\").\n"
+              "  • En el celular: Ajustes > Seguridad > Credenciales de usuario > borrá \"CONTROL CELULAR\", "
+              "y desinstalá la app.")
+    avisar_cartel(texto)
+    al_salir()
+
+
 def _hace(visto: int) -> str:
     import time
     if not visto:
@@ -125,6 +191,19 @@ def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
         yield pystray.Menu.SEPARATOR
         yield pystray.MenuItem("Olvidar todos", olvidar_todos)
 
+    nueva = {"v": None}
+
+    def items_version():
+        yield pystray.MenuItem(f"Control Celular {version.VERSION}", None, enabled=False)
+        if nueva["v"]:
+            yield pystray.MenuItem(f"Descargar la versión {nueva['v']}",
+                                   lambda: webbrowser.open(version.PAGINA_RELEASES))
+        yield pystray.MenuItem("Buscar versiones nuevas",
+                               lambda: guardar_config("buscarVersiones", not buscar_versiones_activado()),
+                               checked=lambda _: buscar_versiones_activado())
+        yield pystray.Menu.SEPARATOR
+        yield pystray.MenuItem("Desinstalar…", lambda: desinstalar(al_salir))
+
     menu = pystray.Menu(
         pystray.MenuItem("Mostrar QR para conectar", lambda: webbrowser.open(url_qr), default=True),
         pystray.MenuItem("Mostrar la ventana", lambda: mostrar_ventana(not ventana_visible()),
@@ -132,6 +211,7 @@ def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
         pystray.MenuItem("Iniciar con Windows", lambda: cambiar_inicio(not inicio_activado()),
                          checked=lambda _: inicio_activado()),
         pystray.MenuItem("Celulares emparejados", pystray.Menu(items_celulares)),
+        pystray.MenuItem("Versión y desinstalar", pystray.Menu(items_version)),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Salir", lambda icono: (icono.stop(), al_salir())),
     )
@@ -146,4 +226,18 @@ def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
             icono.update_menu()  # para que la lista de celulares esté al día
         except Exception:
             pass
+
+    def buscar_version():
+        if not buscar_versiones_activado():
+            return
+        v = version.version_nueva()
+        if v:
+            nueva["v"] = v
+            print(f"  Hay una versión nueva de Control Celular: {v}. Bajala desde {version.PAGINA_RELEASES}")
+            try:
+                icono.update_menu()
+                icono.notify(f"Hay una versión nueva: {v}. Abrí el ícono → Versión y desinstalar.", "Control Celular")
+            except Exception:
+                pass
+    threading.Thread(target=buscar_version, name="version", daemon=True).start()
     return avisar

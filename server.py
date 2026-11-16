@@ -619,8 +619,9 @@ if __name__ == "__main__":
             sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
     except (AttributeError, ValueError):
         pass
+    import version
     print()
-    print("  === CONTROL CELULAR ===")
+    print(f"  === CONTROL CELULAR {version.VERSION} ===")
     print()
     red.revisar(preguntar=not MINIMIZADO)  # firewall y red privada: solo pregunta si falta algo
     crear_primer_control()
