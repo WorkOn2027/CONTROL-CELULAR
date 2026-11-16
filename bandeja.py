@@ -80,9 +80,50 @@ def _texto(conectados: list[int]) -> str:
     return "Control Celular: jugadores " + ", ".join(map(str, conectados)) + " conectados"
 
 
-def iniciar(url_qr: str, al_salir, minimizado: bool):
+def confirmar(texto: str) -> bool:
+    """Cartel de Windows con Sí / No."""
+    MB_YESNO, MB_ICONQUESTION, MB_TOPMOST, IDYES = 0x4, 0x20, 0x40000, 6
+    return _u32.MessageBoxW(None, texto, "Control Celular", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST) == IDYES
+
+
+def _hace(visto: int) -> str:
+    import time
+    if not visto:
+        return "sin usar todavía"
+    s = time.time() - visto
+    if s < 3600:
+        return "usado hace un rato"
+    if s < 86400:
+        return f"usado hace {int(s // 3600)} h"
+    return f"usado hace {int(s // 86400)} días"
+
+
+def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
     """Pone el ícono (en su propio hilo) y devuelve una función para avisarle los jugadores conectados."""
     imagen = Image.open(rutas.RECURSOS / "web" / "icono-192.png")
+
+    def olvidar_uno(c):
+        def accion():
+            if confirmar(f"¿Olvidar «{c['nombre']}»?\n\nVa a perder el permiso para conectarse y sus ajustes "
+                         "guardados en la PC. Para volver a usarlo hay que emparejarlo de nuevo con el QR."):
+                olvidar({c["id"]})
+        return accion
+
+    def olvidar_todos():
+        if confirmar("¿Olvidar TODOS los celulares emparejados?\n\nTodos pierden el permiso para conectarse y sus "
+                     "ajustes guardados en la PC. Para volver a usarlos hay que emparejarlos de nuevo con el QR."):
+            olvidar(None)
+
+    def items_celulares():
+        lista = listar_celulares()
+        if not lista:
+            yield pystray.MenuItem("No hay celulares emparejados", None, enabled=False)
+            return
+        for c in lista:
+            estado = "conectado ahora" if c["conectado"] else _hace(c["visto"])
+            yield pystray.MenuItem(f"Olvidar «{c['nombre']}» ({estado})", olvidar_uno(c))
+        yield pystray.Menu.SEPARATOR
+        yield pystray.MenuItem("Olvidar todos", olvidar_todos)
 
     menu = pystray.Menu(
         pystray.MenuItem("Mostrar QR para conectar", lambda: webbrowser.open(url_qr), default=True),
@@ -90,6 +131,7 @@ def iniciar(url_qr: str, al_salir, minimizado: bool):
                          checked=lambda _: ventana_visible()),
         pystray.MenuItem("Iniciar con Windows", lambda: cambiar_inicio(not inicio_activado()),
                          checked=lambda _: inicio_activado()),
+        pystray.MenuItem("Celulares emparejados", pystray.Menu(items_celulares)),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Salir", lambda icono: (icono.stop(), al_salir())),
     )
@@ -100,4 +142,8 @@ def iniciar(url_qr: str, al_salir, minimizado: bool):
 
     def avisar(conectados: list[int]) -> None:
         icono.title = _texto(conectados)
+        try:
+            icono.update_menu()  # para que la lista de celulares esté al día
+        except Exception:
+            pass
     return avisar

@@ -1,6 +1,6 @@
 // Service worker mínimo: guarda la página para que la app abra rápido.
 // Siempre intenta traer la versión nueva de la PC; si no responde, usa la guardada.
-const CACHE = "control-v4";
+const CACHE = "control-v5";
 const ARCHIVOS = ["/", "/plantillas.js", "/manifest.webmanifest", "/icono-192.png"];
 
 self.addEventListener("install", (e) => {

@@ -65,6 +65,8 @@ control**, con este menú:
 - **Mostrar QR para conectar:** abre el QR en grande, en el navegador de la PC.
 - **Mostrar la ventana:** muestra u oculta la ventana negra.
 - **Iniciar con Windows:** arranca solo al prender la PC, oculto, sin la ventana.
+- **Celulares emparejados:** la lista de celulares con permiso para conectarse, para **olvidar** uno o todos. Un
+  celular olvidado pierde el permiso y sus ajustes, y para volver a usarlo hay que emparejarlo con el QR.
 - **Salir.**
 
 Al pasar el mouse por el ícono, te dice qué jugadores están conectados.
@@ -93,8 +95,11 @@ Cada celular, cuando vuelve, recupera siempre su mismo número.
 
 ### Tus ajustes quedan en la PC
 
-Las ediciones del control y las opciones se guardan **en la PC**, no solo en el celular. Si cambiás de celular, si
-cambia la IP de la PC o si reinstalás la app, al conectarte recuperás todo como lo dejaste.
+Las ediciones del control y las opciones se guardan **en la PC**, separadas por celular: cada jugador tiene las
+suyas. Si cambia la IP de la PC o reinstalás la app, al conectarte recuperás todo como lo dejaste.
+
+¿Celular nuevo? En **☰ → Copiar ajustes de otro celular** elegís de cuál copiar (aparecen por su modelo) y te quedan
+iguales.
 
 ---
 
@@ -118,6 +123,7 @@ cambia la IP de la PC o si reinstalás la app, al conectarte recuperás todo com
   - Se ajusta con sensibilidad e invertir.
 - **Vibración:** al tocar los botones, y cuando el juego hace vibrar el control.
 - **Ver tutorial:** repite la guía del primer uso.
+- **Copiar ajustes de otro celular:** trae los controles editados y las opciones de otro celular emparejado.
 
 ---
 
@@ -144,6 +150,10 @@ cambia la IP de la PC o si reinstalás la app, al conectarte recuperás todo com
 - Para conectarse, un celular tiene que conocer el **código de emparejamiento**, que solo aparece en tu pantalla.
   El QR lleva ese código adentro: por eso la página del QR solo se abre desde la propia PC. El código cambia cada
   vez que abrís el programa.
+- **Límite de intentos:** cada 5 códigos equivocados desde un mismo equipo, queda bloqueado un rato, y el bloqueo se
+  duplica cada vez (30 s, 1 min, 2 min… hasta 1 hora). Si hay muchos intentos fallidos en total, el código cambia
+  solo y el nuevo aparece en la ventana y en el QR del ícono.
+- Podés **olvidar** cualquier celular emparejado desde el ícono: pierde el permiso al instante.
 - El certificado lo crea tu propia PC la primera vez (queda en `%LOCALAPPDATA%\ControlCelular\certs`, o en `certs/`
   con la opción de Python). Está **restringido a direcciones de redes
   privadas**: aunque alguien lo robara, no serviría para hacerse pasar por ningún sitio de internet.

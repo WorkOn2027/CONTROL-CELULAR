@@ -13,3 +13,4 @@ dist/
 # Respaldos locales de datos privados (certificados, tokens, notas)
 respaldos/
 ajustes.json
+ajustes-formato-viejo.json

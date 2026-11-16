@@ -145,6 +145,10 @@
   #menu .ancho { grid-column: 1 / -1; display: flex; gap: 3vw; flex-wrap: wrap; }
   #error { color: var(--B); font-size: 4vh; min-height: 5vh; }
   #tutorial { z-index: 15; }
+  #copiar h2 { font-size: 5vh; }
+  #copiar.ver { overflow-y: auto; touch-action: pan-y; }
+  #copiarLista { display: flex; flex-direction: column; gap: 2vh; width: min(70vw, 600px); }
+  #copiarEstado { font-size: 4vh; }
   .tutCaja { background: #fff; border-radius: 4vh; padding: 5vh 6vw; max-width: 76vw; display: flex;
              flex-direction: column; align-items: center; gap: 2.5vh; box-shadow: 0 0 0 1px #dfe2e6; }
   .tutCaja h2 { font-size: 5.5vh; } .tutCaja p { font-size: 4vh; line-height: 1.4; max-width: 62vw; }
@@ -243,6 +247,7 @@
     <button id="pantalla">Pantalla completa</button>
     <button id="editor">Editor de control</button>
     <button id="verTutorial">Ver tutorial</button>
+    <button id="copiarAjustes">Copiar ajustes de otro celular</button>
   </div>
   <div class="col" id="giroOpts">
     <label>Giroscopio
@@ -272,6 +277,13 @@
   </div>
   <div id="estadoLista"></div>
   <div id="juegosGrid"></div>
+</div>
+
+<div class="capa" id="copiar">
+  <h2>Copiar ajustes de otro celular</h2>
+  <div id="copiarEstado">Buscando…</div>
+  <div id="copiarLista"></div>
+  <button id="copiarCerrar">Volver</button>
 </div>
 
 <div class="capa" id="tutorial">
@@ -350,6 +362,51 @@
     }
   }
 
+  // Nombre para reconocer este celular en las listas (el modelo, si Chrome lo dice).
+  async function nombreCelular() {
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        const d = await navigator.userAgentData.getHighEntropyValues(["model"]);
+        if (d.model) return d.model;
+      }
+    } catch (e) {}
+    const m = navigator.userAgent.match(/Android [\d.]+; ([^;)]+)/);
+    return m && m[1] !== "K" ? m[1].replace(/ Build.*/, "").trim() : "Celular";
+  }
+
+  // Copiar los ajustes de otro celular (pisa los de este, que se recargan).
+  function mostrarOtrosCelulares(json) {
+    let lista = [];
+    try { lista = JSON.parse(json) || []; } catch (e) {}
+    const cont = $("copiarLista"); cont.textContent = "";
+    $("copiarEstado").textContent = lista.length ? "Elegí de qué celular copiar:" : "No hay otros celulares con ajustes guardados en esta PC.";
+    for (const c of lista) {
+      const b = document.createElement("button");
+      const dias = c.visto ? Math.floor((Date.now() / 1000 - c.visto) / 86400) : null;
+      b.textContent = c.nombre + (dias === null ? "" : dias < 1 ? " · usado hoy" : ` · hace ${dias} días`);
+      b.onclick = () => {
+        if (confirm(`¿Copiar los ajustes de «${c.nombre}»? Se reemplazan los de este celular (controles editados y opciones).`)) {
+          ws.send("cp " + c.id);
+        }
+      };
+      cont.appendChild(b);
+    }
+  }
+  function aplicarCopia(json) {
+    let srv = {};
+    try { srv = JSON.parse(json) || {}; } catch (e) { return; }
+    try {
+      const borrar = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (SINCRONIZADOS.test(k) && !(k in srv)) borrar.push(k);
+      }
+      borrar.forEach((k) => localStorage.removeItem(k));
+    } catch (e) {}
+    for (const k in srv) if (SINCRONIZADOS.test(k)) guardarLocal(k, srv[k]);
+    location.reload();
+  }
+
   function conectar(clave) {
     if (ws) { ws.onclose = null; ws.close(); }
     listo = false;
@@ -360,12 +417,20 @@
       if (p[0] === "ok") {
         token = p[1]; guardarLocal("token", token); listo = true;
         $("emparejar").classList.remove("ver"); puntos(true);
+        nombreCelular().then((n) => { if (listo && ws.readyState === 1) ws.send("d " + n); });
         if (leer("tutorialVisto", "0") !== "1") setTimeout(abrirTutorial, 600);
       } else if (p[0] === "no") {
         if (token && clave === token) { token = null; guardarLocal("token", null); }
         if (codigoQR && clave !== codigoQR) { conectar(codigoQR); return; }
         $("error").textContent = "Código incorrecto";
         pedirCodigo();
+      } else if (p[0] === "espera") {
+        $("error").textContent = `Demasiados códigos equivocados. Esperá ${p[1]} segundos y probá de nuevo.`;
+        pedirCodigo();
+      } else if (p[0] === "lc") {
+        mostrarOtrosCelulares(e.data.slice(3));
+      } else if (p[0] === "cc") {
+        aplicarCopia(e.data.slice(3));
       } else if (p[0] === "lleno") {
         $("error").textContent = "Ya hay 4 celulares conectados a esta PC.";
         pedirCodigo();
@@ -1043,6 +1108,14 @@
   };
   $("tutSaltar").onclick = cerrarTutorial;
   $("verTutorial").onclick = abrirTutorial;
+  $("copiarAjustes").onclick = () => {
+    $("menu").classList.remove("ver");
+    $("copiarLista").textContent = "";
+    $("copiarEstado").textContent = listo ? "Buscando…" : "Primero conectate a la PC (puntito verde).";
+    $("copiar").classList.add("ver");
+    if (listo && ws.readyState === 1) ws.send("l");
+  };
+  $("copiarCerrar").onclick = () => $("copiar").classList.remove("ver");
 
   // ---------- Arranque ----------
   if (juegoElegido) ponerJuego(juegoElegido, false); // deja dibujado el control del último juego

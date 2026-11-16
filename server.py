@@ -10,10 +10,16 @@ Protocolo (texto, mensajes cortos):
                   "s <L|R> <x> <y>"      stick, x/y en -1000..1000 (y positivo = arriba)
                   "r"                    soltar todo
                   "p <n>"                ping (la PC contesta lo mismo, para medir la demora)
-                  "k <clave> <valor>"    guardar un ajuste en la PC (valor vacío = borrarlo)
+                  "k <clave> <valor>"    guardar un ajuste de ESTE celular en la PC (valor vacío = borrarlo)
+                  "d <nombre>"           nombre del celular (su modelo), para reconocerlo en las listas
+                  "l"                    pedir la lista de otros celulares con ajustes guardados
+                  "cp <id>"              copiar los ajustes de otro celular a este
   PC -> celular:  "ok <token>" | "no" | "lleno"   resultado del emparejamiento
+                  "espera <segundos>"    demasiados códigos equivocados: esperar antes de reintentar
+                  "lc <json>"            lista de otros celulares [{id, nombre, visto}]
+                  "cc <json>"            ajustes recién copiados (aplicarlos y recargar)
                   "n <jugador>"          qué número de jugador es (1-4)
-                  "c <json>"             todos los ajustes guardados en la PC (al conectarse)
+                  "c <json>"             los ajustes de este celular guardados en la PC (al conectarse)
                   "v <grande> <chico>"   vibración (0-255 cada motor)
                   "j <appid> <tipo> <nombre>" | "j 0"   juego de Steam abierto en la PC (o ninguno)
                   "p <n>"                respuesta al ping
@@ -93,20 +99,88 @@ def _leer_json(ruta, vacio):
         return vacio
 
 
-tokens: set[str] = set(_leer_json(TOKENS, []))
-ajustes: dict[str, str | None] = _leer_json(AJUSTES, {})  # None = borrado (para que no lo reviva otro celular)
+def _guardar_json(ruta, datos) -> None:
+    tmp = ruta.with_suffix(".tmp")
+    tmp.write_text(json.dumps(datos, ensure_ascii=False), "utf-8")
+    tmp.replace(ruta)
+
+
+def _cargar_celulares() -> dict[str, dict]:
+    """Celulares emparejados: token -> {nombre, visto}. (Antes era una lista de tokens: se convierte sola.)"""
+    d = _leer_json(TOKENS, {})
+    if isinstance(d, list):
+        d = {t: {"nombre": f"Celular {i + 1}", "visto": 0} for i, t in enumerate(d)}
+    return d if isinstance(d, dict) else {}
+
+
+def _cargar_ajustes() -> dict:
+    """Ajustes de cada celular: {"celulares": {token: {clave: valor}}}. None = borrado.
+    Si el archivo es del formato viejo (uno solo para toda la PC), no se le da a nadie: se guarda como respaldo.
+    Cada celular tiene su propia copia y la vuelve a subir sola al conectarse."""
+    d = _leer_json(AJUSTES, {})
+    if not isinstance(d, dict) or "celulares" not in d:
+        if d:
+            _guardar_json(AJUSTES.with_name("ajustes-formato-viejo.json"), d)
+        d = {"celulares": {}}
+    return d
+
+
+celulares: dict[str, dict] = _cargar_celulares()
+ajustes: dict = _cargar_ajustes()
 codigo = f"{secrets.randbelow(10000):04d}"
 loop: asyncio.AbstractEventLoop | None = None
 
 
-def guardar_tokens() -> None:
-    TOKENS.write_text(json.dumps(sorted(tokens)), "utf-8")
+def guardar_celulares() -> None:
+    _guardar_json(TOKENS, celulares)
 
 
 def guardar_ajustes() -> None:
-    tmp = AJUSTES.with_suffix(".tmp")
-    tmp.write_text(json.dumps(ajustes, ensure_ascii=False), "utf-8")
-    tmp.replace(AJUSTES)
+    _guardar_json(AJUSTES, ajustes)
+
+
+def ajustes_de(token: str) -> dict:
+    return ajustes["celulares"].setdefault(token, {})
+
+
+def id_corto(token: str) -> str:
+    """Identificador para mostrar o elegir un celular sin revelar su token."""
+    import hashlib
+    return hashlib.sha256(token.encode()).hexdigest()[:10]
+
+
+# ---------- Límite de intentos con el código de emparejamiento ----------
+# Cada 5 códigos equivocados desde un mismo equipo: bloqueo que se duplica (30 s, 1 min, 2 min... hasta 1 h).
+# Si en 10 minutos hay 40 fallos en total (aunque vengan de varios equipos), el código cambia solo.
+INTENTOS, BLOQUEO_BASE, BLOQUEO_MAX = 5, 30, 3600
+fallos: dict[str, list] = {}  # ip -> [fallos seguidos, bloqueado hasta, veces bloqueado]
+fallos_recientes: list[float] = []
+
+
+def segundos_bloqueado(ip: str) -> int:
+    f = fallos.get(ip)
+    return max(0, int(f[1] - time.time()) + 1) if f and time.time() < f[1] else 0
+
+
+def anotar_fallo(ip: str) -> None:
+    global codigo
+    f = fallos.setdefault(ip, [0, 0.0, 0])
+    f[0] += 1
+    if f[0] >= INTENTOS:
+        f[0], f[2] = 0, f[2] + 1
+        espera = min(BLOQUEO_MAX, BLOQUEO_BASE * 2 ** (f[2] - 1))
+        f[1] = time.time() + espera
+        print(f"  {INTENTOS} códigos equivocados desde {ip}: bloqueado {espera} segundos.")
+    ahora = time.time()
+    fallos_recientes.append(ahora)
+    while fallos_recientes and ahora - fallos_recientes[0] > 600:
+        fallos_recientes.pop(0)
+    if len(fallos_recientes) >= 40:
+        fallos_recientes.clear()
+        codigo = f"{secrets.randbelow(10000):04d}"
+        direccion["qr"] = f"http://{direccion['ip']}:{PUERTO}/?c={codigo}"
+        print(f"  Demasiados intentos fallidos: cambié el código de emparejamiento. Nuevo código: {codigo}")
+        print("  (el QR del ícono ya tiene el código nuevo)")
 
 
 # ---------- Jugadores (un control virtual por celular) ----------
@@ -225,15 +299,35 @@ async def a_todos(texto: str) -> None:
         await enviar(j.ws, texto)
 
 
-def guardar_ajuste(resto: str) -> None:
+def guardar_ajuste(token: str, resto: str) -> None:
     clave, _, valor = resto.partition(" ")
     if not clave or len(clave) > 100 or len(valor) > 200_000:
         return
-    ajustes[clave] = valor if valor != "" else None
+    ajustes_de(token)[clave] = valor if valor != "" else None
     guardar_ajustes()
 
 
+def otros_celulares(token: str) -> list[dict]:
+    """Los demás celulares que tienen ajustes guardados (para copiarlos)."""
+    lista = []
+    for t, info in celulares.items():
+        a = ajustes["celulares"].get(t) or {}
+        if t != token and any(v is not None for v in a.values()):
+            lista.append({"id": id_corto(t), "nombre": info.get("nombre") or "Celular", "visto": info.get("visto", 0)})
+    return sorted(lista, key=lambda c: -c["visto"])
+
+
+def copiar_ajustes(token: str, id_origen: str) -> bool:
+    origen = next((t for t in celulares if id_corto(t) == id_origen and t != token), None)
+    if origen is None:
+        return False
+    ajustes["celulares"][token] = dict(ajustes["celulares"].get(origen) or {})
+    guardar_ajustes()
+    return True
+
+
 async def atender(ws):
+    ip = ws.remote_address[0]
     # Emparejamiento: primer mensaje = código (primera vez) o token guardado.
     try:
         primero = await asyncio.wait_for(ws.recv(), timeout=30)
@@ -244,16 +338,23 @@ async def atender(ws):
         await ws.send("no")
         return
     clave = partes[1]
-    if clave in tokens:
+    if clave in celulares:
         token = clave
-    elif clave == codigo:
-        token = secrets.token_urlsafe(16)
-        tokens.add(token)
-        guardar_tokens()
     else:
-        await ws.send("no")
-        print("  Intento con código incorrecto desde", ws.remote_address[0])
-        return
+        espera = segundos_bloqueado(ip)
+        if espera:
+            await ws.send(f"espera {espera}")
+            return
+        if clave != codigo:
+            anotar_fallo(ip)
+            await ws.send("no")
+            print("  Intento con código incorrecto desde", ip)
+            return
+        fallos.pop(ip, None)
+        token = secrets.token_urlsafe(16)
+        celulares[token] = {"nombre": "Celular", "visto": 0}
+    celulares[token]["visto"] = int(time.time())
+    guardar_celulares()
 
     j = lugar_para(token)
     if j is None:
@@ -266,17 +367,30 @@ async def atender(ws):
     j.ws, j.token = ws, token
     await ws.send(f"ok {token}")
     await ws.send(f"n {j.numero}")
-    await ws.send("c " + json.dumps(ajustes, ensure_ascii=False))
+    await ws.send("c " + json.dumps(ajustes_de(token), ensure_ascii=False))
     await ws.send(mensaje_abierto())
-    print(f"  Jugador {j.numero} conectado:", ws.remote_address[0])
+    print(f"  Jugador {j.numero} conectado ({celulares[token]['nombre']}):", ip)
     avisar_conexiones()
     try:
         async for msg in ws:
+            if token not in celulares:  # lo olvidaron desde el ícono mientras estaba conectado
+                break
             try:
                 if msg.startswith("p "):
                     await ws.send(msg)
                 elif msg.startswith("k "):
-                    guardar_ajuste(msg[2:])
+                    guardar_ajuste(token, msg[2:])
+                elif msg.startswith("d "):  # el celular dice su modelo, para reconocerlo en las listas
+                    nombre = " ".join(msg[2:].split())[:40]
+                    if nombre and celulares.get(token, {}).get("nombre") != nombre:
+                        celulares[token]["nombre"] = nombre
+                        guardar_celulares()
+                        avisar_conexiones()
+                elif msg == "l":
+                    await ws.send("lc " + json.dumps(otros_celulares(token), ensure_ascii=False))
+                elif msg.startswith("cp "):
+                    if copiar_ajustes(token, msg[3:].strip()):
+                        await ws.send("cc " + json.dumps(ajustes_de(token), ensure_ascii=False))
                 else:
                     aplicar(j.pad, msg)
             except (ValueError, IndexError):
@@ -289,6 +403,37 @@ async def atender(ws):
             j.soltar()
             print(f"  Jugador {j.numero} desconectado (se soltaron todos sus botones)")
             avisar_conexiones()
+
+
+# ---------- Olvidar celulares (desde el ícono de la barra) ----------
+
+def lista_para_bandeja() -> list[dict]:
+    conectados_tok = {j.token for j in conectados()}
+    return sorted(({"id": id_corto(t), "nombre": i.get("nombre") or "Celular", "visto": i.get("visto", 0),
+                    "conectado": t in conectados_tok} for t, i in celulares.items()), key=lambda c: -c["visto"])
+
+
+async def _olvidar(ids: set[str] | None) -> None:
+    """Saca celulares emparejados (None = todos): pierden el permiso y sus ajustes, y se desconectan."""
+    objetivo = [t for t in celulares if ids is None or id_corto(t) in ids]
+    for t in objetivo:
+        celulares.pop(t, None)
+        ajustes["celulares"].pop(t, None)
+        for j in jugadores.values():
+            if j.token == t:
+                j.token = None
+                if j.ws is not None:
+                    await j.ws.close()
+    guardar_celulares()
+    guardar_ajustes()
+    print(f"  Olvidé {len(objetivo)} celular(es). Para volver a usarlos hay que emparejarlos de nuevo (QR).")
+    avisar_conexiones()
+
+
+def olvidar_desde_bandeja(ids: set[str] | None) -> None:
+    """Lo llama el ícono (otro hilo): hace el trabajo dentro del servidor."""
+    if loop is not None:
+        loop.call_soon_threadsafe(asyncio.ensure_future, _olvidar(ids))
 
 
 # ---------- Biblioteca de Steam ----------
@@ -390,7 +535,7 @@ def servir_archivos(seguro: bool):
             return respuesta(pagina_qr(), "text/html")
         if ruta == "/juegos" or ruta.startswith("/portada/"):
             # La biblioteca es privada: solo para celulares emparejados.
-            if parse_qs(partes.query).get("t", [""])[0] not in tokens:
+            if parse_qs(partes.query).get("t", [""])[0] not in celulares:
                 return connection.respond(403, "Sin permiso\n")
             if ruta == "/juegos":
                 lista = [{k: j[k] for k in ("id", "nombre", "tipo")} for j in biblioteca()]
@@ -445,7 +590,7 @@ async def main():
             import bandeja
             global al_cambiar_conexiones
             al_cambiar_conexiones = bandeja.iniciar(f"http://127.0.0.1:{PUERTO}/qr", soltar_todo_y_salir,
-                                                     MINIMIZADO)
+                                                     MINIMIZADO, lista_para_bandeja, olvidar_desde_bandeja)
         except Exception as e:
             print("  (No pude poner el ícono en la barra de tareas:", e, ")")
         await asyncio.to_thread(biblioteca)
@@ -466,7 +611,12 @@ def soltar_todo_y_salir() -> None:
 
 if __name__ == "__main__":
     try:
-        sys.stdout.reconfigure(line_buffering=True)  # que los mensajes salgan al instante
+        # Que los mensajes salgan al instante. Si la salida no es una ventana (va a un archivo), en UTF-8:
+        # así se ven los acentos y el QR (en la ventana de Windows ya se ven siempre).
+        if sys.stdout.isatty():
+            sys.stdout.reconfigure(line_buffering=True)
+        else:
+            sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
     except (AttributeError, ValueError):
         pass
     print()
