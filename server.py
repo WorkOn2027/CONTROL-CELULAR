@@ -21,7 +21,7 @@ import mimetypes
 import secrets
 import socket
 import ssl
-from pathlib import Path
+import sys
 
 import time
 from urllib.parse import parse_qs, urlsplit
@@ -29,6 +29,8 @@ from urllib.parse import parse_qs, urlsplit
 import vgamepad as vg
 
 import certs
+import red
+import rutas
 import steam
 from websockets.asyncio.server import serve
 from websockets.datastructures import Headers
@@ -36,9 +38,19 @@ from websockets.http11 import Response
 
 PUERTO = 8765          # HTTP: página para instalar el certificado
 PUERTO_SEGURO = 8443   # HTTPS: el control
-CARPETA = Path(__file__).parent
-WEB = CARPETA / "web"
-TOKENS = CARPETA / "tokens.json"
+WEB = rutas.RECURSOS / "web"
+TOKENS = rutas.DATOS / "tokens.json"
+DESCARGA_VIGEMBUS = "https://github.com/nefarius/ViGEmBus/releases"
+
+
+def salir(codigo_salida: int = 0) -> None:
+    """En el .exe la ventana se cerraría sola y no se leería el mensaje: esperar un Enter."""
+    if rutas.EMPAQUETADO:
+        try:
+            input("  Presioná Enter para cerrar...")
+        except (EOFError, OSError):
+            pass
+    raise SystemExit(codigo_salida)
 
 B = vg.XUSB_BUTTON
 BOTONES = {
@@ -83,11 +95,16 @@ try:
 except Exception as e:  # casi siempre: falta el driver ViGEmBus
     print()
     print("  No pude crear el control virtual de Xbox:", e)
-    print("  Falta el driver ViGEmBus. Instalalo desde:")
-    print("    https://github.com/nefarius/ViGEmBus/releases  (archivo ViGEmBus_..._x64_x86_arm64.exe)")
-    print("  y después volvé a abrir iniciar.bat.")
+    print("  Falta el driver ViGEmBus (es gratis y oficial). Te abro la página para descargarlo:")
+    print(f"    {DESCARGA_VIGEMBUS}")
+    print("  Bajá el archivo ViGEmBus_..._x64_x86_arm64.exe, instalalo y volvé a abrir Control Celular.")
     print()
-    raise SystemExit(1)
+    try:
+        import webbrowser
+        webbrowser.open(DESCARGA_VIGEMBUS)
+    except Exception:
+        pass
+    salir(1)
 cliente = None  # conexión activa (una sola a la vez)
 loop = None
 
@@ -285,7 +302,7 @@ async def main():
         print(f"  Primera vez / ayuda:   http://{ip}:{PUERTO}")
         print(f"  Código de emparejamiento:  {codigo}")
         print("  El celular tiene que estar en la misma red WiFi que esta PC.")
-        print("  ¿No conecta? Ejecutá permitir-firewall.bat (una sola vez) y fijate que tu red sea «Privada».")
+        print("  ¿No conecta? Cerrá y volvé a abrir: te ofrezco abrir el firewall y marcar la red como privada.")
         print("  (Ctrl+C para cerrar)")
         print()
         await asyncio.to_thread(biblioteca)
@@ -296,6 +313,24 @@ async def main():
 
 if __name__ == "__main__":
     try:
+        sys.stdout.reconfigure(line_buffering=True)  # que los mensajes salgan al instante
+    except (AttributeError, ValueError):
+        pass
+    print()
+    print("  === CONTROL CELULAR ===")
+    print()
+    red.revisar()  # firewall y red privada: solo pregunta si falta algo
+    try:
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+    except OSError as e:
+        print()
+        print("  No pude arrancar:", e)
+        if getattr(e, "winerror", None) == 10048:
+            print("  Parece que Control Celular ya está abierto en otra ventana. Cerrala y probá de nuevo.")
+        salir(1)
+    except Exception as e:
+        print()
+        print("  Error inesperado:", repr(e))
+        salir(1)

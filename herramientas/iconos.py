@@ -57,7 +57,20 @@ def png(tam, ruta, sub=3):
                      + trozo(b"IEND", b""))
 
 
+def ico(ruta_png: Path, ruta_ico: Path) -> None:
+    """Ícono de Windows (.ico) con una imagen PNG de 256x256 adentro (formato aceptado desde Windows Vista)."""
+    datos = ruta_png.read_bytes()
+    cabecera = struct.pack("<HHH", 0, 1, 1)
+    entrada = struct.pack("<BBBBHHII", 0, 0, 0, 0, 1, 32, len(datos), 6 + 16)  # 0 = 256 px
+    ruta_ico.write_bytes(cabecera + entrada + datos)
+
+
 if __name__ == "__main__":
     for t in (192, 512):
         png(t, WEB / f"icono-{t}.png")
         print("ok", t)
+    aqui = Path(__file__).resolve().parent
+    png(256, aqui / "icono-256.png")
+    ico(aqui / "icono-256.png", aqui / "icono.ico")
+    (aqui / "icono-256.png").unlink()
+    print("ok icono.ico")

@@ -16,7 +16,9 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
-CARPETA = Path(__file__).parent / "certs"
+import rutas
+
+CARPETA = rutas.DATOS / "certs"
 CA_KEY, CA_CRT = CARPETA / "ca.key", CARPETA / "ca.crt"
 SRV_KEY, SRV_CRT = CARPETA / "server.key", CARPETA / "server.crt"
 

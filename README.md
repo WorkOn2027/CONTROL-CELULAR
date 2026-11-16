@@ -19,26 +19,38 @@ Usá tu celular Android como **control de juegos para la PC**. Windows, Steam y 
 | | |
 |---|---|
 | **PC** | Windows 10 u 11 |
-| **Python** | 3.10 o más nuevo: [python.org/downloads](https://www.python.org/downloads/). Al instalarlo, marcá **«Add python.exe to PATH»**. |
 | **Celular** | Android con Chrome |
 | **Red** | La PC y el celular conectados a la **misma red** (el WiFi de tu casa, o el hotspot del celular) |
+| **Driver** | **ViGEmBus** (gratis): es lo que crea el control de Xbox virtual. Si no lo tenés, el programa te avisa y te abre la página para descargarlo. |
 
 ---
 
-## Instalación en la PC (una sola vez)
+## Instalación en la PC
 
-1. **Descargá el proyecto.** En GitHub, tocá el botón verde **Code → Download ZIP** y descomprimilo en una carpeta.
-   Si usás git, también podés clonarlo.
-2. **Ejecutá `instalar.bat`** con doble clic.
-   - Crea un entorno de Python propio del proyecto (`.venv`) e instala las librerías.
-   - Si se abre el instalador de **ViGEmBus** (el driver del control virtual), aceptá y seguí los pasos.
-3. **Ejecutá `permitir-firewall.bat`** con doble clic y aceptá el permiso de administrador.
-   - Abre los puertos **8765** y **8443** solo en redes **privadas** y solo para los equipos de tu red.
-   - Te pregunta si querés marcar tu red como **privada**. Decí que sí **solo si es la red de tu casa**.
+### Opción fácil: descargar el programa (recomendada)
 
-> **Si al iniciar aparece «Falta el driver ViGEmBus»**, instalalo a mano desde
-> [github.com/nefarius/ViGEmBus/releases](https://github.com/nefarius/ViGEmBus/releases) (el archivo
-> `ViGEmBus_..._x64_x86_arm64.exe`) y volvé a abrir `iniciar.bat`.
+1. Entrá a **[Releases](../../releases/latest)** y descargá **`ControlCelular.exe`**. Es un solo archivo y no hace
+   falta instalar Python ni nada más.
+2. Abrilo con doble clic. Podés dejarlo en cualquier carpeta, incluso en Descargas.
+   - Windows puede mostrar **«Windows protegió su PC»**, porque el programa no está firmado. Tocá **Más información →
+     Ejecutar de todas formas**.
+   - La primera vez te pregunta si querés **abrir el firewall** (solo para la red de tu casa) y, si tu red está como
+     «Pública», si querés marcarla como **privada**. Respondé **S**, solo si es la red de tu casa, y aceptá el
+     permiso de Windows.
+   - Si falta **ViGEmBus**, te abre la página oficial. Descargá `ViGEmBus_..._x64_x86_arm64.exe`, instalalo y volvé a
+     abrir Control Celular.
+
+Tus datos (el certificado y los celulares emparejados) se guardan en `%LOCALAPPDATA%\ControlCelular`.
+
+### Opción con Python (para quien quiera ver o cambiar el código)
+
+1. Instalá **Python 3.10 o más nuevo** desde [python.org/downloads](https://www.python.org/downloads/). Al
+   instalarlo, marcá **«Add python.exe to PATH»**.
+2. Descargá el proyecto: botón verde **Code → Download ZIP**, y descomprimilo. También podés usar `git clone`.
+3. Ejecutá **`iniciar.bat`**. La primera vez instala todo solo (`.venv` y librerías). Después hace las mismas
+   preguntas del firewall que el programa.
+
+Para armar tu propio `ControlCelular.exe`, ejecutá **`construir.bat`**. Lo deja en la carpeta `dist\`.
 
 ---
 
@@ -46,7 +58,8 @@ Usá tu celular Android como **control de juegos para la PC**. Windows, Steam y 
 
 ### En la PC (cada vez)
 
-Ejecutá **`iniciar.bat`**. Se abre una ventana como esta:
+Abrí **Control Celular**: `ControlCelular.exe`, o `iniciar.bat` si usás la opción con Python. Se abre una ventana
+como esta:
 
 ```
   CONTROL CELULAR listo
@@ -99,8 +112,11 @@ conectada.
 
 | Pasa esto | Probá esto |
 |---|---|
-| El celular no abre la página | Fijate que la PC y el celular estén en la **misma red**, que hayas ejecutado `permitir-firewall.bat` y que la red sea **Privada** (Configuración → Red e Internet → tu red). |
-| «Falta el driver ViGEmBus» | Instalalo desde [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases) y volvé a abrir `iniciar.bat`. |
+| El celular no abre la página | Fijate que la PC y el celular estén en la **misma red**. Cerrá y volvé a abrir Control Celular, y respondé **S** a abrir el firewall y a marcar la red como privada. También se cambia a mano en Configuración → Red e Internet → tu red → **Privada**. |
+| «Falta el driver ViGEmBus» | Instalalo desde [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases) y volvé a abrir Control Celular. |
+| «Windows protegió su PC» | Es porque el programa no está firmado. Tocá **Más información → Ejecutar de todas formas**. Si no confiás, usá la opción con Python, que es el mismo código a la vista. |
+| El antivirus lo bloquea | Pasa a veces con programas armados con PyInstaller. Podés usar la opción con Python, o armar vos el `.exe` con `construir.bat`. |
+| «Control Celular ya está abierto» | Ya hay otra ventana del programa abierta. Usá esa, o cerrala antes. |
 | La página dice «certificado todavía no está instalado» | Repetí el paso 2. Android puede pedir que tengas un bloqueo de pantalla (PIN o patrón). |
 | Cambié de red y la app no abre | La IP de la PC cambió. Abrí la dirección nueva que muestra `iniciar.bat` (el certificado no hace falta reinstalarlo) y volvé a emparejar. |
 | El giroscopio va al revés | En ☰, activá «Invertir horizontal» o «Invertir vertical». |
@@ -113,7 +129,8 @@ conectada.
 
 - Todo funciona **dentro de tu red local**. No se conecta a internet ni manda tu biblioteca de Steam a ningún lado.
 - Para conectarse, un celular tiene que conocer el **código de emparejamiento**, que solo aparece en tu pantalla.
-- El certificado lo crea tu propia PC la primera vez (queda en `certs/`). Está **restringido a direcciones de redes
+- El certificado lo crea tu propia PC la primera vez (queda en `%LOCALAPPDATA%\ControlCelular\certs`, o en `certs/`
+  con la opción de Python). Está **restringido a direcciones de redes
   privadas**: aunque alguien lo robara, no serviría para hacerse pasar por ningún sitio de internet.
 - Los puertos se abren solo en redes **privadas**.
 - **No compartas** la carpeta `certs/` ni el archivo `tokens.json`: son privados de tu PC y ya están excluidos del repo.
@@ -125,12 +142,15 @@ conectada.
 | Archivo | Qué hace |
 |---|---|
 | `server.py` | Servidor: crea el control virtual (vgamepad + ViGEmBus), sirve la página y recibe los botones por WebSocket |
+| `red.py` | Revisa el firewall y si la red es privada; si falta algo, pregunta y lo arregla con permiso de Windows |
+| `rutas.py` | Dónde están los archivos, tanto en Python como en el `.exe` |
 | `certs.py` | Crea el certificado propio para HTTPS en la red local |
 | `steam.py` | Lee la biblioteca de Steam de la PC (juegos, tipo, portadas, juego abierto) |
 | `web/index.html` | El control del celular (HTML, CSS y JavaScript puro, sin librerías) |
 | `web/plantillas.js` | Los controles: completo, alargado, uno por tipo de juego y perfiles propios por juego |
 | `web/configurar.html` | La página de la primera vez (instalar el certificado) |
-| `instalar.bat`, `permitir-firewall.bat`, `iniciar.bat` | Instalar, abrir el firewall y arrancar |
+| `iniciar.bat`, `instalar.bat` | Arrancar con Python (la primera vez instala solo) |
+| `construir.bat` | Arma `dist\ControlCelular.exe` con PyInstaller |
 
 Para agregar un control propio para un juego, sumalo en `PERFILES` dentro de `web/plantillas.js` con su número de
 Steam (appid).

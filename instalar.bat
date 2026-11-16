@@ -33,8 +33,7 @@ echo   Si se abre el instalador de ViGEmBus, acepta y segui los pasos.
 ".venv\Scripts\python.exe" -m pip install -r requirements.txt || goto :error
 
 echo.
-echo   Listo. Siguiente paso: ejecuta permitir-firewall.bat ^(una sola vez^)
-echo   y despues iniciar.bat cada vez que quieras usar el control.
+echo   Listo. Ejecuta iniciar.bat cada vez que quieras usar el control.
 echo.
 pause
 exit /b 0
