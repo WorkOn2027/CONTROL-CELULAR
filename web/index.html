@@ -18,6 +18,16 @@
     --texto: #59616b;
     --A: #3c9a5f; --B: #c9483f; --X: #3a72c4; --Y: #c9a227;
     --V: #8a5cc7; --N: #d9822b; --K: #3d444d;
+    --superficie: #fff; --perilla: #fff; --linea: #dfe2e6; --linea-fuerte: #c9ced5; --perilla-on: #f1f3f5;
+    --activo: #e6eefa; --barra-ed: rgba(251,251,252,.97); --capa: rgba(236,238,241,.97);
+  }
+  /* Modo noche (☰ → Opciones). Por defecto el control es blanco. */
+  html.noche {
+    --fondo: #0f1114; --cuerpo: #1a1d22; --tecla: #272b32; --tecla-borde: #363b44; --on: #5a6472; --texto: #d3d8de;
+    --A: #4fbf78; --B: #e0675e; --X: #5a90e0; --Y: #d9b23c; --V: #a07ee0; --N: #e8954a; --K: #c5cbd3;
+    --superficie: #20242a; --perilla: #444b55; --linea: #2b2f36; --linea-fuerte: #3d434c; --perilla-on: #2c3138;
+    --activo: #1f2e45; --barra-ed: rgba(26,29,34,.97); --capa: rgba(15,17,20,.97);
+    color-scheme: dark;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -27,7 +37,7 @@
   }
   .control {
     position: fixed; inset: 1.5vh 1vw; background: var(--cuerpo);
-    border-radius: 6vh; border: 1px solid #dfe2e6;
+    border-radius: 6vh; border: 1px solid var(--linea);
   }
   .el { position: absolute; transform: translate(-50%, -50%); }
   .tecla {
@@ -40,9 +50,9 @@
   /* Sticks */
   .stick { border-radius: 50%; background: var(--tecla); border: 1px solid var(--tecla-borde); }
   .perilla { position: absolute; left: 50%; top: 50%; width: 15vh; height: 15vh;
-             margin: -7.5vh 0 0 -7.5vh; border-radius: 50%; background: #fff;
-             border: 1px solid #c9ced5; will-change: transform; }
-  .stick.on .perilla { background: #f1f3f5; border-color: var(--on); }
+             margin: -7.5vh 0 0 -7.5vh; border-radius: 50%; background: var(--perilla);
+             border: 1px solid var(--linea-fuerte); will-change: transform; }
+  .stick.on .perilla { background: var(--perilla-on); border-color: var(--on); }
   .stick.giro .perilla { border-color: var(--X); }
 
   /* Cruceta */
@@ -71,27 +81,27 @@
     background-image: linear-gradient(to right, rgba(58,114,196,.13) 1px, transparent 1px),
                       linear-gradient(to bottom, rgba(58,114,196,.13) 1px, transparent 1px);
     background-size: 5% 5%; background-position: -1px -1px; }
-  .edBarra button.activo { background: #e6eefa; border-color: var(--X); color: var(--X); }
+  .edBarra button.activo { background: var(--activo); border-color: var(--X); color: var(--X); }
   .edBarra button:disabled { opacity: .4; }
   .edBarra { position: fixed; left: 0; right: 0; z-index: 8; display: flex; gap: 1.5vw; align-items: center;
-             padding: 1.5vh 2vw; background: rgba(251,251,252,.97); overflow-x: auto; touch-action: pan-x;
-             white-space: nowrap; font-size: 3.6vh; box-shadow: 0 0 0 1px #dfe2e6; }
+             padding: 1.5vh 2vw; background: var(--barra-ed); overflow-x: auto; touch-action: pan-x;
+             white-space: nowrap; font-size: 3.6vh; box-shadow: 0 0 0 1px var(--linea); }
   #edArriba { top: 0; } #edPanel { bottom: 0; }
   body.edInv #edArriba { top: auto; bottom: 0; } body.edInv #edPanel { bottom: auto; top: 0; }
   .edBarra button, .edBarra select, .edBarra input { font: inherit; font-size: 3.6vh; padding: 1.2vh 2vh; flex: none;
-             border-radius: 2vh; border: 1px solid var(--tecla-borde); background: #fff; color: var(--texto); }
+             border-radius: 2vh; border: 1px solid var(--tecla-borde); background: var(--superficie); color: var(--texto); }
   .edBarra .grupo { display: inline-flex; gap: 1vw; align-items: center; flex: none; }
   .edBarra .principal { background: var(--X); color: #fff; border-color: var(--X); font-weight: 700; }
-  .edBarra .sw { width: 6.5vh; height: 6.5vh; padding: 0; border-radius: 50%; border: 2px solid #fff;
-                 box-shadow: 0 0 0 1px #c9ced5; }
+  .edBarra .sw { width: 6.5vh; height: 6.5vh; padding: 0; border-radius: 50%; border: 2px solid var(--superficie);
+                 box-shadow: 0 0 0 1px var(--linea-fuerte); }
   .edBarra .sw.si { box-shadow: 0 0 0 3px var(--X); }
   .edBarra input[type=text] { width: 20vw; }
-  .edBarra .sep { width: 1px; align-self: stretch; background: #dfe2e6; flex: none; }
-  .tecla.blanca { background: #fff; border: 2px solid var(--tecla-borde); }
+  .edBarra .sep { width: 1px; align-self: stretch; background: var(--linea); flex: none; }
+  .tecla.blanca { background: var(--superficie); border: 2px solid var(--tecla-borde); }
   .tecla.blanca.on { background: var(--on); color: #fff; }
 
   /* Control armado por juego (#pad3, lo dibuja plantillas.js) */
-  .tecla.color { background: #fff; border: 2px solid var(--c); color: var(--c); }
+  .tecla.color { background: var(--superficie); border: 2px solid var(--c); color: var(--c); }
   .tecla.color.on { background: var(--c); color: #fff; }
   .tecla .sub { font-size: max(2.3vh, .45em); font-weight: 500; opacity: .85; margin-top: .2em; }
   .barra3 { display: flex; gap: 2vw; align-items: center; }
@@ -108,7 +118,7 @@
   #juegosGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(25vw, 1fr)); gap: 3vh 2vw; }
   .juego { display: flex !important; flex-direction: column; align-items: stretch; gap: 1vh; padding: 1.5vh !important;
            text-align: left; position: relative; }
-  .juego img, .juego .sinFoto { width: 100%; aspect-ratio: 460 / 215; border-radius: 1.5vh; background: #dfe2e6;
+  .juego img, .juego .sinFoto { width: 100%; aspect-ratio: 460 / 215; border-radius: 1.5vh; background: var(--linea);
                                 object-fit: cover; display: block; }
   .juego .n { font-size: 3.6vh; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .juego .t { font-size: 2.8vh; opacity: .75; }
@@ -125,19 +135,19 @@
   .modelo.elegido { border: 3px solid var(--X) !important; }
 
   /* Ventanas */
-  .capa { position: fixed; inset: 0; background: rgba(236,238,241,.97); display: none;
+  .capa { position: fixed; inset: 0; background: var(--capa); display: none;
           align-items: center; justify-content: center; flex-direction: column; gap: 3vh;
           z-index: 10; font-size: 5vh; text-align: center; padding: 4vh; }
   .capa.ver { display: flex; }
   .capa input { font-size: 8vh; width: 30vh; text-align: center; letter-spacing: 1.5vh;
                 border: 2px solid var(--tecla-borde); border-radius: 2vh; padding: 1vh; }
   .capa button, .capa a.btn { font-size: 4.2vh; padding: 2vh 4vh; border-radius: 3vh; border: 1px solid var(--tecla-borde);
-                 background: #fff; color: var(--texto); text-decoration: none; font-family: inherit; }
+                 background: var(--superficie); color: var(--texto); text-decoration: none; font-family: inherit; }
   .capa label { font-size: 4.2vh; display: flex; gap: 2vh; align-items: center; }
   .capa input[type=checkbox] { width: 5vh; height: 5vh; }
   .capa input[type=range] { width: 30vw; font-size: inherit; padding: 0; border: 0; }
   .capa select { font-size: 4.2vh; padding: 1vh 2vh; border-radius: 2vh; border: 1px solid var(--tecla-borde);
-                 background: #fff; color: var(--texto); font-family: inherit; }
+                 background: var(--superficie); color: var(--texto); font-family: inherit; }
   #menu.ver { display: grid; grid-template-columns: 1fr 1fr; align-content: start; justify-items: start;
               gap: 3vh 5vw; padding: 5vh 6vw; overflow-y: auto; touch-action: pan-y; text-align: left; }
   #menu h2 { font-size: 4.6vh; grid-column: 1 / -1; }
@@ -149,11 +159,11 @@
   #copiar.ver { overflow-y: auto; touch-action: pan-y; }
   #copiarLista { display: flex; flex-direction: column; gap: 2vh; width: min(70vw, 600px); }
   #copiarEstado { font-size: 4vh; }
-  .tutCaja { background: #fff; border-radius: 4vh; padding: 5vh 6vw; max-width: 76vw; display: flex;
-             flex-direction: column; align-items: center; gap: 2.5vh; box-shadow: 0 0 0 1px #dfe2e6; }
+  .tutCaja { background: var(--superficie); border-radius: 4vh; padding: 5vh 6vw; max-width: 76vw; display: flex;
+             flex-direction: column; align-items: center; gap: 2.5vh; box-shadow: 0 0 0 1px var(--linea); }
   .tutCaja h2 { font-size: 5.5vh; } .tutCaja p { font-size: 4vh; line-height: 1.4; max-width: 62vw; }
   .tutIcono { font-size: 10vh; line-height: 1; }
-  .tutPuntos { display: flex; gap: 1.5vw; } .tutPuntos span { width: 2vh; height: 2vh; border-radius: 50%; background: #dfe2e6; }
+  .tutPuntos { display: flex; gap: 1.5vw; } .tutPuntos span { width: 2vh; height: 2vh; border-radius: 50%; background: var(--linea); }
   .tutPuntos span.si { background: var(--X); }
   .tutBotones { display: flex; gap: 3vw; }
   .capa button.principal { background: var(--X); color: #fff; border-color: var(--X); font-weight: 700; }
@@ -244,6 +254,7 @@
   <div class="col">
     <label><input type="checkbox" id="optToque"> Vibrar al tocar</label>
     <label><input type="checkbox" id="optJuego"> Vibración del juego</label>
+    <label><input type="checkbox" id="optNoche"> Modo noche</label>
     <button id="pantalla">Pantalla completa</button>
     <button id="editor">Editor de control</button>
     <button id="verTutorial">Ver tutorial</button>
@@ -306,7 +317,7 @@
   const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const guardarLocal = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
   // Estos ajustes también se guardan en la PC: así cualquier celular (o la misma app con otra IP) los recupera.
-  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto)$/;
+  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto|noche)$/;
   const pendientes = {};
   const guardar = (k, v) => {
     guardarLocal(k, v);
@@ -320,7 +331,15 @@
     giro: leer("giro", "0"), sens: +leer("sens", "5"),
     invX: leer("invX", "0") === "1", invY: leer("invY", "0") === "1",
     auto: leer("auto", "1") === "1",
+    noche: leer("noche", "0") === "1",
   };
+  // Modo noche: colores oscuros en todo (control, menú, editor). Apagado = control blanco.
+  function aplicarNoche() {
+    document.documentElement.classList.toggle("noche", opt.noche);
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = opt.noche ? "#0f1114" : "#eceef1";
+  }
+  aplicarNoche();
   const puedeVibrar = "vibrate" in navigator;
 
   // ---------- Conexión ----------
@@ -705,13 +724,14 @@
   }
   function abrirMenu() {
     soltarTodo(true);
-    $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego;
+    $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego; $("optNoche").checked = opt.noche;
     $("optGiro").value = opt.giro; $("optSens").value = opt.sens;
     $("optInvX").checked = opt.invX; $("optInvY").checked = opt.invY;
     $("menu").classList.add("ver");
   }
   const casilla = (id, clave) => $(id).onchange = (e) => { opt[clave] = e.target.checked; guardar(clave, opt[clave] ? "1" : "0"); };
   casilla("optToque", "toque"); casilla("optJuego", "juego"); casilla("optInvX", "invX"); casilla("optInvY", "invY");
+  casilla("optNoche", "noche"); $("optNoche").addEventListener("change", aplicarNoche);
   $("optJuego").addEventListener("change", () => { if (!opt.juego && puedeVibrar) navigator.vibrate(0); });
   $("optGiro").onchange = (e) => { opt.giro = e.target.value; guardar("giro", opt.giro); aplicarGiro(); };
   $("optSens").oninput = (e) => { opt.sens = +e.target.value; guardar("sens", String(opt.sens)); };
@@ -847,7 +867,7 @@
 
   // ---------- Editor de control ----------
   let editando = false, edEspec = null, edSel = -1, edArrastre = null, edEsBase = false;
-  const COLORES = [["", "var(--tecla)", "Gris"], ["W", "#fff", "Blanco"], ["A", "var(--A)", "Verde"], ["B", "var(--B)", "Rojo"],
+  const COLORES = [["", "var(--tecla)", "Gris"], ["W", "var(--superficie)", "Blanco (oscuro en modo noche)"], ["A", "var(--A)", "Verde"], ["B", "var(--B)", "Rojo"],
                    ["X", "var(--X)", "Azul"], ["Y", "var(--Y)", "Amarillo"], ["V", "var(--V)", "Violeta"],
                    ["N", "var(--N)", "Naranja"], ["K", "var(--K)", "Negro"]];
   const FUNCIONES = [["b:A", "A"], ["b:B", "B"], ["b:X", "X"], ["b:Y", "Y"], ["b:LB", "LB"], ["b:RB", "RB"],

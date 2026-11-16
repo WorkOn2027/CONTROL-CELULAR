@@ -122,6 +122,8 @@ iguales.
   - **Apuntar:** movés el celular y mueve el stick derecho.
   - Se ajusta con sensibilidad e invertir.
 - **Vibración:** al tocar los botones, y cuando el juego hace vibrar el control.
+- **Modo noche:** colores oscuros en el control, el menú y el editor, para jugar con poca luz. Apagado, el control
+  es blanco. Se guarda para cada celular.
 - **Ver tutorial:** repite la guía del primer uso.
 - **Copiar ajustes de otro celular:** trae los controles editados y las opciones de otro celular emparejado.
 
