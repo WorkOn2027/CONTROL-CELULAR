@@ -1,7 +1,7 @@
 """CONTROL CELULAR - servidor de la PC.
 
-Sirve la página del control y recibe por WebSocket lo que se toca en el celular.
-Lo vuelca en un control de Xbox 360 virtual (ViGEmBus + vgamepad).
+Sirve la página del control y recibe por WebSocket lo que se toca en cada celular.
+Cada celular es un jugador (hasta 4) con su propio control de Xbox 360 virtual (ViGEmBus + vgamepad).
 
 Protocolo (texto, mensajes cortos):
   celular -> PC:  "a <codigo|token>"     emparejar / reconectar
@@ -9,10 +9,16 @@ Protocolo (texto, mensajes cortos):
                   "t <L|R> <0-255>"      gatillo
                   "s <L|R> <x> <y>"      stick, x/y en -1000..1000 (y positivo = arriba)
                   "r"                    soltar todo
-  PC -> celular:  "ok <token>" | "no"    resultado del emparejamiento
+                  "p <n>"                ping (la PC contesta lo mismo, para medir la demora)
+                  "k <clave> <valor>"    guardar un ajuste en la PC (valor vacío = borrarlo)
+  PC -> celular:  "ok <token>" | "no" | "lleno"   resultado del emparejamiento
+                  "n <jugador>"          qué número de jugador es (1-4)
+                  "c <json>"             todos los ajustes guardados en la PC (al conectarse)
                   "v <grande> <chico>"   vibración (0-255 cada motor)
                   "j <appid> <tipo> <nombre>" | "j 0"   juego de Steam abierto en la PC (o ninguno)
+                  "p <n>"                respuesta al ping
   HTTP(S):        /juegos?t=<token>      biblioteca de Steam (JSON)   /portada/<appid>?t=<token>  portada
+                  /qr                    QR para conectarse (solo desde esta misma PC)
 """
 
 import asyncio
@@ -22,35 +28,38 @@ import secrets
 import socket
 import ssl
 import sys
-
 import time
 from urllib.parse import parse_qs, urlsplit
 
 import vgamepad as vg
+from websockets.asyncio.server import serve
+from websockets.datastructures import Headers
+from websockets.http11 import Response
 
 import certs
 import red
 import rutas
 import steam
-from websockets.asyncio.server import serve
-from websockets.datastructures import Headers
-from websockets.http11 import Response
 
 PUERTO = 8765          # HTTP: página para instalar el certificado
 PUERTO_SEGURO = 8443   # HTTPS: el control
+MAX_JUGADORES = 4
 WEB = rutas.RECURSOS / "web"
 TOKENS = rutas.DATOS / "tokens.json"
+AJUSTES = rutas.DATOS / "ajustes.json"
 DESCARGA_VIGEMBUS = "https://github.com/nefarius/ViGEmBus/releases"
+MINIMIZADO = "--minimizado" in sys.argv  # al arrancar con Windows: ventana oculta, sin preguntas
 
 
 def salir(codigo_salida: int = 0) -> None:
     """En el .exe la ventana se cerraría sola y no se leería el mensaje: esperar un Enter."""
-    if rutas.EMPAQUETADO:
+    if rutas.EMPAQUETADO and not MINIMIZADO:
         try:
             input("  Presioná Enter para cerrar...")
         except (EOFError, OSError):
             pass
     raise SystemExit(codigo_salida)
+
 
 B = vg.XUSB_BUTTON
 BOTONES = {
@@ -77,43 +86,108 @@ def ip_local() -> str:
         s.close()
 
 
-def cargar_tokens() -> set[str]:
+def _leer_json(ruta, vacio):
     try:
-        return set(json.loads(TOKENS.read_text("utf-8")))
+        return json.loads(ruta.read_text("utf-8"))
     except (OSError, ValueError):
-        return set()
+        return vacio
 
 
-def guardar_tokens(tokens: set[str]) -> None:
+tokens: set[str] = set(_leer_json(TOKENS, []))
+ajustes: dict[str, str | None] = _leer_json(AJUSTES, {})  # None = borrado (para que no lo reviva otro celular)
+codigo = f"{secrets.randbelow(10000):04d}"
+loop: asyncio.AbstractEventLoop | None = None
+
+
+def guardar_tokens() -> None:
     TOKENS.write_text(json.dumps(sorted(tokens)), "utf-8")
 
 
-tokens = cargar_tokens()
-codigo = f"{secrets.randbelow(10000):04d}"
-try:
-    pad = vg.VX360Gamepad()
-except Exception as e:  # casi siempre: falta el driver ViGEmBus
-    print()
-    print("  No pude crear el control virtual de Xbox:", e)
-    print("  Falta el driver ViGEmBus (es gratis y oficial). Te abro la página para descargarlo:")
-    print(f"    {DESCARGA_VIGEMBUS}")
-    print("  Bajá el archivo ViGEmBus_..._x64_x86_arm64.exe, instalalo y volvé a abrir Control Celular.")
-    print()
+def guardar_ajustes() -> None:
+    tmp = AJUSTES.with_suffix(".tmp")
+    tmp.write_text(json.dumps(ajustes, ensure_ascii=False), "utf-8")
+    tmp.replace(AJUSTES)
+
+
+# ---------- Jugadores (un control virtual por celular) ----------
+
+class Jugador:
+    def __init__(self, numero: int):
+        self.numero = numero
+        self.pad = vg.VX360Gamepad()
+        self.pad.reset()
+        self.pad.update()  # arrancar con todo en cero (si no, los sticks quedan corridos)
+        self.pad.register_notification(callback_function=self._al_vibrar)
+        self.ws = None
+        self.token = None
+
+    def _al_vibrar(self, client, target, grande, chico, led, user_data):
+        """Lo llama el driver (desde otro hilo) cuando un juego hace vibrar ESTE control."""
+        if self.ws is not None and loop is not None:
+            loop.call_soon_threadsafe(asyncio.ensure_future, enviar(self.ws, f"v {grande} {chico}"))
+
+    def soltar(self) -> None:
+        self.pad.reset()
+        self.pad.update()
+
+
+jugadores: dict[int, Jugador] = {}
+
+
+def crear_primer_control() -> None:
+    """El jugador 1 se crea al arrancar: así, si falta ViGEmBus, se avisa enseguida."""
     try:
-        import webbrowser
-        webbrowser.open(DESCARGA_VIGEMBUS)
-    except Exception:
-        pass
-    salir(1)
-cliente = None  # conexión activa (una sola a la vez)
-loop = None
+        jugadores[1] = Jugador(1)
+    except Exception as e:  # casi siempre: falta el driver ViGEmBus
+        print()
+        print("  No pude crear el control virtual de Xbox:", e)
+        print("  Falta el driver ViGEmBus (es gratis y oficial). Te abro la página para descargarlo:")
+        print(f"    {DESCARGA_VIGEMBUS}")
+        print("  Bajá el archivo ViGEmBus_..._x64_x86_arm64.exe, instalalo y volvé a abrir Control Celular.")
+        print()
+        try:
+            import webbrowser
+            webbrowser.open(DESCARGA_VIGEMBUS)
+        except Exception:
+            pass
+        salir(1)
+
+
+def lugar_para(token: str) -> Jugador | None:
+    """El mismo celular vuelve siempre a su número de jugador; uno nuevo toma el primer lugar libre."""
+    for j in jugadores.values():
+        if j.token == token:
+            return j
+    for n in range(1, MAX_JUGADORES + 1):
+        j = jugadores.get(n)
+        if j is None:
+            jugadores[n] = Jugador(n)
+            return jugadores[n]
+        if j.ws is None:
+            return j
+    return None
+
+
+def conectados() -> list[Jugador]:
+    return [j for j in jugadores.values() if j.ws is not None]
+
+
+al_cambiar_conexiones = None  # lo usa el ícono de la barra para mostrar cuántos hay
+
+
+def avisar_conexiones() -> None:
+    if al_cambiar_conexiones:
+        try:
+            al_cambiar_conexiones([j.numero for j in conectados()])
+        except Exception:
+            pass
 
 
 def limitar(v: float) -> float:
     return max(-1.0, min(1.0, v))
 
 
-def aplicar(msg: str) -> None:
+def aplicar(pad, msg: str) -> None:
     p = msg.split()
     if not p:
         return
@@ -139,24 +213,27 @@ def aplicar(msg: str) -> None:
     pad.update()
 
 
-def al_vibrar(client, target, grande, chico, led, user_data):
-    """Lo llama el driver (desde otro hilo) cuando un juego pide vibración."""
-    if cliente is not None and loop is not None:
-        loop.call_soon_threadsafe(
-            asyncio.ensure_future, enviar(f"v {grande} {chico}")
-        )
-
-
-async def enviar(texto: str) -> None:
+async def enviar(ws, texto: str) -> None:
     try:
-        if cliente is not None:
-            await cliente.send(texto)
+        await ws.send(texto)
     except Exception:
         pass
 
 
+async def a_todos(texto: str) -> None:
+    for j in conectados():
+        await enviar(j.ws, texto)
+
+
+def guardar_ajuste(resto: str) -> None:
+    clave, _, valor = resto.partition(" ")
+    if not clave or len(clave) > 100 or len(valor) > 200_000:
+        return
+    ajustes[clave] = valor if valor != "" else None
+    guardar_ajustes()
+
+
 async def atender(ws):
-    global cliente
     # Emparejamiento: primer mensaje = código (primera vez) o token guardado.
     try:
         primero = await asyncio.wait_for(ws.recv(), timeout=30)
@@ -172,32 +249,46 @@ async def atender(ws):
     elif clave == codigo:
         token = secrets.token_urlsafe(16)
         tokens.add(token)
-        guardar_tokens(tokens)
+        guardar_tokens()
     else:
         await ws.send("no")
         print("  Intento con código incorrecto desde", ws.remote_address[0])
         return
 
+    j = lugar_para(token)
+    if j is None:
+        await ws.send("lleno")
+        print(f"  Ya hay {MAX_JUGADORES} celulares conectados; no entra otro.")
+        return
+    if j.ws is not None:  # el mismo celular se reconectó: cerrar la conexión vieja
+        viejo, j.ws = j.ws, None
+        await viejo.close()
+    j.ws, j.token = ws, token
     await ws.send(f"ok {token}")
-    if cliente is not None:
-        await cliente.close()
-    cliente = ws
-    print("  Celular conectado:", ws.remote_address[0])
+    await ws.send(f"n {j.numero}")
+    await ws.send("c " + json.dumps(ajustes, ensure_ascii=False))
     await ws.send(mensaje_abierto())
+    print(f"  Jugador {j.numero} conectado:", ws.remote_address[0])
+    avisar_conexiones()
     try:
         async for msg in ws:
             try:
-                aplicar(msg)
+                if msg.startswith("p "):
+                    await ws.send(msg)
+                elif msg.startswith("k "):
+                    guardar_ajuste(msg[2:])
+                else:
+                    aplicar(j.pad, msg)
             except (ValueError, IndexError):
                 pass
     except Exception:
         pass
     finally:
-        if cliente is ws:
-            cliente = None
-            pad.reset()
-            pad.update()
-            print("  Celular desconectado (se soltaron todos los botones)")
+        if j.ws is ws:
+            j.ws = None
+            j.soltar()
+            print(f"  Jugador {j.numero} desconectado (se soltaron todos sus botones)")
+            avisar_conexiones()
 
 
 # ---------- Biblioteca de Steam ----------
@@ -222,7 +313,7 @@ def mensaje_abierto() -> str:
 
 
 async def vigilar_juego():
-    """Cada 4 segundos se fija qué juego está abierto y, si cambió, le avisa al celular."""
+    """Cada 4 segundos se fija qué juego está abierto y, si cambió, les avisa a los celulares."""
     while True:
         try:
             actual = await asyncio.to_thread(lambda: steam.juego_abierto(biblioteca()))
@@ -230,12 +321,49 @@ async def vigilar_juego():
             actual = None
         if actual != abierto["id"]:
             abierto["id"] = actual
-            await enviar(mensaje_abierto())
+            await a_todos(mensaje_abierto())
         await asyncio.sleep(4)
 
 
+# ---------- QR para conectarse ----------
+direccion = {"qr": "", "ip": ""}
+
+
+def qr_svg() -> bytes:
+    import io
+    import segno
+    buf = io.BytesIO()
+    segno.make(direccion["qr"], error="m").save(buf, kind="svg", scale=10, border=3, dark="#2b3138")
+    return buf.getvalue()
+
+
+def pagina_qr() -> bytes:
+    svg = qr_svg().decode("utf-8")
+    svg = svg[svg.index("<svg"):]
+    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Conectar el celular</title>
+<style>body{{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+gap:14px;background:#eceef1;color:#3d444d;font:17px/1.4 system-ui,sans-serif;text-align:center;padding:16px}}
+.caja{{background:#fff;border-radius:20px;padding:18px;box-shadow:0 0 0 1px #dfe2e6}} svg{{width:min(70vw,340px);height:auto}}
+code{{font-size:15px;background:#fff;padding:4px 8px;border-radius:8px}} b{{font-size:28px;letter-spacing:4px}}</style></head>
+<body><h1 style="margin:0;font-size:24px">Escaneá con la cámara del celular</h1>
+<div class="caja">{svg}</div>
+<div>O abrí en Chrome: <code>{direccion["qr"].split("?")[0]}</code> y poné el código <b>{codigo}</b></div>
+<div style="opacity:.7;font-size:14px">El celular tiene que estar en el mismo WiFi que esta PC.</div></body></html>""".encode()
+
+
+def mostrar_qr_en_consola() -> None:
+    try:
+        import segno
+        segno.make(direccion["qr"], error="m").terminal(compact=True, border=2)
+    except Exception:
+        pass  # si la consola no puede dibujarlo, queda la dirección escrita y el QR del ícono
+
+
+# ---------- Página web ----------
+
 def respuesta(cuerpo: bytes, tipo: str, extra=(), cache="no-cache") -> Response:
-    if tipo.startswith("text") or tipo.endswith(("json", "javascript")):
+    if tipo.startswith("text") or tipo.endswith(("json", "javascript", "svg+xml")):
         tipo += "; charset=utf-8"
     headers = Headers([("Content-Type", tipo), ("Content-Length", str(len(cuerpo))),
                        ("Cache-Control", cache), *extra])
@@ -253,6 +381,13 @@ def servir_archivos(seguro: bool):
             return None
         partes = urlsplit(request.path)
         ruta = partes.path
+        if ruta in ("/qr", "/qr.svg"):
+            # El QR lleva el código de emparejamiento: solo se muestra en esta misma PC.
+            if connection.remote_address[0] not in ("127.0.0.1", "::1"):
+                return connection.respond(403, "Solo desde la PC\n")
+            if ruta == "/qr.svg":
+                return respuesta(qr_svg(), "image/svg+xml")
+            return respuesta(pagina_qr(), "text/html")
         if ruta == "/juegos" or ruta.startswith("/portada/"):
             # La biblioteca es privada: solo para celulares emparejados.
             if parse_qs(partes.query).get("t", [""])[0] not in tokens:
@@ -285,10 +420,9 @@ def servir_archivos(seguro: bool):
 async def main():
     global loop
     loop = asyncio.get_running_loop()
-    pad.reset()
-    pad.update()  # arrancar con todo en cero (si no, los sticks quedan corridos)
-    pad.register_notification(callback_function=al_vibrar)
     ip = ip_local()
+    direccion["ip"] = ip
+    direccion["qr"] = f"http://{ip}:{PUERTO}/?c={codigo}"
     crt, key = certs.preparar(ip)
     tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     tls.load_cert_chain(crt, key)
@@ -297,18 +431,37 @@ async def main():
             serve(atender, "0.0.0.0", PUERTO_SEGURO, process_request=servir_archivos(True), ssl=tls,
                   **opciones) as seguro:
         print()
-        print("  CONTROL CELULAR listo")
-        print(f"  Control (app):         https://{ip}:{PUERTO_SEGURO}")
-        print(f"  Primera vez / ayuda:   http://{ip}:{PUERTO}")
-        print(f"  Código de emparejamiento:  {codigo}")
-        print("  El celular tiene que estar en la misma red WiFi que esta PC.")
-        print("  ¿No conecta? Cerrá y volvé a abrir: te ofrezco abrir el firewall y marcar la red como privada.")
-        print("  (Ctrl+C para cerrar)")
+        print("  CONTROL CELULAR listo. Escaneá este QR con la cámara del celular:")
         print()
+        mostrar_qr_en_consola()
+        print()
+        print(f"  O abrí en Chrome:  http://{ip}:{PUERTO}   y poné el código  {codigo}")
+        print(f"  (con el certificado ya instalado, la app es:  https://{ip}:{PUERTO_SEGURO})")
+        print("  El celular tiene que estar en la misma red WiFi que esta PC. Hasta 4 celulares a la vez.")
+        print("  ¿No conecta? Cerrá y volvé a abrir: te ofrezco abrir el firewall y marcar la red como privada.")
+        print("  El ícono del control, al lado del reloj, tiene el QR y más opciones.")
+        print()
+        try:
+            import bandeja
+            global al_cambiar_conexiones
+            al_cambiar_conexiones = bandeja.iniciar(f"http://127.0.0.1:{PUERTO}/qr", soltar_todo_y_salir,
+                                                     MINIMIZADO)
+        except Exception as e:
+            print("  (No pude poner el ícono en la barra de tareas:", e, ")")
         await asyncio.to_thread(biblioteca)
         print(f"  Biblioteca de Steam: {len(biblioteca())} juegos")
         asyncio.ensure_future(vigilar_juego())
         await seguro.serve_forever()
+
+
+def soltar_todo_y_salir() -> None:
+    for j in jugadores.values():
+        try:
+            j.soltar()
+        except Exception:
+            pass
+    import os
+    os._exit(0)
 
 
 if __name__ == "__main__":
@@ -319,7 +472,8 @@ if __name__ == "__main__":
     print()
     print("  === CONTROL CELULAR ===")
     print()
-    red.revisar()  # firewall y red privada: solo pregunta si falta algo
+    red.revisar(preguntar=not MINIMIZADO)  # firewall y red privada: solo pregunta si falta algo
+    crear_primer_control()
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

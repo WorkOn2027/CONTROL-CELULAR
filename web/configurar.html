@@ -22,6 +22,10 @@
   #estado { font-weight: 700; }
   #estado.ok { color: #3c9a5f; } #estado.no { color: #b8792a; }
   small { color: #6b737d; }
+  .marcas { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+  .marcas button { width: auto; margin: 0; padding: 9px 14px; font-size: 15px; background: #e4e7eb; color: #3d444d; }
+  .marcas button.si { background: #3a72c4; color: #fff; }
+  .guia { display: none; } .guia.si { display: block; }
 </style>
 </head>
 <body>
@@ -38,16 +42,38 @@
 
   <div class="caja">
     <span class="n">2</span><b>Instalalo en Ajustes</b>
-    <ol>
-      <li>Abrí <b>Ajustes</b> y buscá <b>«certificado de CA»</b> (con la lupa de arriba).</li>
-      <li>Entrá a <b>Instalar certificado</b> → <b>Certificado de CA</b>.</li>
-      <li>Si avisa que es riesgoso, tocá <b>Instalar de todas formas</b>.</li>
-      <li>Elegí <b>control-celular-ca.crt</b> (está en Descargas).</li>
-    </ol>
-    <small>Según la marca, el camino suele ser Seguridad → Más ajustes → Cifrado y credenciales.
-      Android puede pedirte tener un bloqueo de pantalla (PIN o patrón). Puede aparecer un aviso de
-      «la red podría estar supervisada»: es normal con certificados propios. Este solo sirve para direcciones
-      de tu red de casa, no para sitios de internet.</small>
+    <div class="marcas" id="marcas">
+      <button data-m="samsung">Samsung</button><button data-m="xiaomi">Xiaomi / Redmi / POCO</button>
+      <button data-m="android">Motorola / Pixel / otros</button>
+    </div>
+    <div class="guia" data-g="samsung">
+      <ol>
+        <li>Abrí <b>Ajustes</b> → <b>Seguridad y privacidad</b>.</li>
+        <li>Entrá a <b>Más ajustes de seguridad</b>.</li>
+        <li>Tocá <b>Instalar desde almacenamiento del dispositivo</b> → <b>Certificado de CA</b>.</li>
+        <li>Tocá <b>Instalar de todos modos</b>, confirmá con tu PIN o patrón y elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
+      </ol>
+    </div>
+    <div class="guia" data-g="xiaomi">
+      <ol>
+        <li>Abrí <b>Ajustes</b> → <b>Contraseñas y seguridad</b> → <b>Privacidad</b>.</li>
+        <li>Entrá a <b>Cifrado y credenciales</b> → <b>Instalar un certificado</b>.</li>
+        <li>Tocá <b>Certificado de CA</b> → <b>Instalar de todas formas</b>.</li>
+        <li>Elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
+      </ol>
+    </div>
+    <div class="guia" data-g="android">
+      <ol>
+        <li>Abrí <b>Ajustes</b> → <b>Seguridad y privacidad</b> → <b>Más ajustes de seguridad</b>.</li>
+        <li>Entrá a <b>Encriptación y credenciales</b> → <b>Instalar un certificado</b>.</li>
+        <li>Tocá <b>Certificado de CA</b> → <b>Instalar de todas formas</b>.</li>
+        <li>Elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
+      </ol>
+    </div>
+    <small><b>¿No lo encontrás?</b> En Ajustes tocá la lupa y buscá <b>«certificado de CA»</b>: los nombres cambian un
+      poco según la versión de Android. Android puede pedirte tener un bloqueo de pantalla (PIN o patrón).
+      Puede aparecer un aviso de «la red podría estar supervisada»: es normal con certificados propios. Este solo
+      sirve para direcciones de tu red de casa, no para sitios de internet.</small>
   </div>
 
   <div class="caja">
@@ -61,13 +87,27 @@
     <a href="/index.html">control sin app ni giroscopio</a> igual.</small></div>
 </main>
 <script>
-  const seguro = `https://${location.hostname}:8443/`;
+  // Si vino del QR, el código de emparejamiento pasa al control para que se conecte solo.
+  const c = new URLSearchParams(location.search).get("c");
+  const base = `https://${location.hostname}:8443/`;
+  const seguro = base + (c && /^\d{4}$/.test(c) ? `?c=${c}` : "");
+  document.querySelector('a[href="/index.html"]').href = "/index.html" + (c ? `?c=${encodeURIComponent(c)}` : "");
+
+  // Guía según la marca (se elige sola por el modelo del celular; se puede cambiar tocando).
+  function marca(m) {
+    document.querySelectorAll(".marcas button").forEach((b) => b.classList.toggle("si", b.dataset.m === m));
+    document.querySelectorAll(".guia").forEach((g) => g.classList.toggle("si", g.dataset.g === m));
+  }
+  const ua = navigator.userAgent;
+  marca(/SM-|Samsung/i.test(ua) ? "samsung" : /Redmi|POCO|Xiaomi|\bMi \d|M2\d{3}|2\d{3}[A-Z0-9]{4,}/i.test(ua) ? "xiaomi" : "android");
+  document.getElementById("marcas").onclick = (e) => { const b = e.target.closest("button"); if (b) marca(b.dataset.m); };
+
   document.getElementById("ir").href = seguro;
   const estado = document.getElementById("estado");
   let yaFue = false;
   async function revisar() {
     try {
-      await fetch(seguro + "ping", { mode: "no-cors", cache: "no-store" });
+      await fetch(base + "ping", { mode: "no-cors", cache: "no-store" });
       estado.textContent = "instalado ✓"; estado.className = "ok";
       if (!yaFue) { yaFue = true; setTimeout(() => location.href = seguro, 800); }
     } catch (e) {

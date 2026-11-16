@@ -10,3 +10,6 @@ CLAUDE.md
 # Lo que genera construir.bat (el .exe se sube a GitHub Releases, no al código)
 build/
 dist/
+# Respaldos locales de datos privados (certificados, tokens, notas)
+respaldos/
+ajustes.json

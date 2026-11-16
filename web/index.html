@@ -67,6 +67,12 @@
   .control.editando .el.elegidoEd { outline: 3px solid var(--X) !important; }
   body.arrastrando .edBarra { opacity: .12; pointer-events: none; }
   .control.editando .barra3 { opacity: .35; }
+  .control.editando.cuadricula {
+    background-image: linear-gradient(to right, rgba(58,114,196,.13) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(58,114,196,.13) 1px, transparent 1px);
+    background-size: 5% 5%; background-position: -1px -1px; }
+  .edBarra button.activo { background: #e6eefa; border-color: var(--X); color: var(--X); }
+  .edBarra button:disabled { opacity: .4; }
   .edBarra { position: fixed; left: 0; right: 0; z-index: 8; display: flex; gap: 1.5vw; align-items: center;
              padding: 1.5vh 2vw; background: rgba(251,251,252,.97); overflow-x: auto; touch-action: pan-x;
              white-space: nowrap; font-size: 3.6vh; box-shadow: 0 0 0 1px #dfe2e6; }
@@ -89,6 +95,9 @@
   .tecla.color.on { background: var(--c); color: #fff; }
   .tecla .sub { font-size: max(2.3vh, .45em); font-weight: 500; opacity: .85; margin-top: .2em; }
   .barra3 { display: flex; gap: 2vw; align-items: center; }
+  .estadoCon { font-size: 2.6vh; opacity: .7; white-space: nowrap; pointer-events: none; }
+  .estadoCon.lento { color: var(--N); opacity: 1; font-weight: 700; }
+  .barra3.v .estadoCon { font-size: 2.2vh; }
   .nombreJuego { font-size: 2.8vh; max-width: 30vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                  opacity: .7; pointer-events: none; }
 
@@ -135,6 +144,15 @@
   #menu .col { display: flex; flex-direction: column; gap: 3vh; align-items: flex-start; }
   #menu .ancho { grid-column: 1 / -1; display: flex; gap: 3vw; flex-wrap: wrap; }
   #error { color: var(--B); font-size: 4vh; min-height: 5vh; }
+  #tutorial { z-index: 15; }
+  .tutCaja { background: #fff; border-radius: 4vh; padding: 5vh 6vw; max-width: 76vw; display: flex;
+             flex-direction: column; align-items: center; gap: 2.5vh; box-shadow: 0 0 0 1px #dfe2e6; }
+  .tutCaja h2 { font-size: 5.5vh; } .tutCaja p { font-size: 4vh; line-height: 1.4; max-width: 62vw; }
+  .tutIcono { font-size: 10vh; line-height: 1; }
+  .tutPuntos { display: flex; gap: 1.5vw; } .tutPuntos span { width: 2vh; height: 2vh; border-radius: 50%; background: #dfe2e6; }
+  .tutPuntos span.si { background: var(--X); }
+  .tutBotones { display: flex; gap: 3vw; }
+  .capa button.principal { background: var(--X); color: #fff; border-color: var(--X); font-weight: 700; }
   [hidden] { display: none !important; }
   #girar { display: none; }
   @media (orientation: portrait) {
@@ -150,6 +168,8 @@
   <button data-ed="addBtn">+ Botón</button>
   <button data-ed="addStick">+ Stick</button>
   <button data-ed="addDpad">+ Cruceta</button>
+  <button data-ed="deshacer" id="edDeshacer">↶ Deshacer</button>
+  <button data-ed="cuadricula" id="edCuadricula">▦ Cuadrícula</button>
   <button data-ed="invertir">⇅ Barras</button>
   <button data-ed="restaurar">Restaurar original</button>
   <button data-ed="cancelar">Cancelar</button>
@@ -222,6 +242,7 @@
     <label><input type="checkbox" id="optJuego"> Vibración del juego</label>
     <button id="pantalla">Pantalla completa</button>
     <button id="editor">Editor de control</button>
+    <button id="verTutorial">Ver tutorial</button>
   </div>
   <div class="col" id="giroOpts">
     <label>Giroscopio
@@ -253,6 +274,16 @@
   <div id="juegosGrid"></div>
 </div>
 
+<div class="capa" id="tutorial">
+  <div class="tutCaja">
+    <div class="tutIcono" id="tutIcono"></div>
+    <h2 id="tutTitulo"></h2>
+    <p id="tutTexto"></p>
+    <div class="tutPuntos" id="tutPuntos"></div>
+    <div class="tutBotones"><button id="tutSaltar">Saltar</button><button id="tutSiguiente" class="principal">Siguiente</button></div>
+  </div>
+</div>
+
 <div class="capa" id="girar">Girá el celular (acostado) ↻</div>
 
 <script src="/plantillas.js"></script>
@@ -261,7 +292,14 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
-  const guardar = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+  const guardarLocal = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+  // Estos ajustes también se guardan en la PC: así cualquier celular (o la misma app con otra IP) los recupera.
+  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto)$/;
+  const pendientes = {};
+  const guardar = (k, v) => {
+    guardarLocal(k, v);
+    if (SINCRONIZADOS.test(k)) { pendientes[k] = v; enviarAjustes(); }
+  };
   const limitar = (v) => v > 1 ? 1 : v < -1 ? -1 : v;
 
   const seguro = location.protocol === "https:";
@@ -274,9 +312,43 @@
   const puedeVibrar = "vibrate" in navigator;
 
   // ---------- Conexión ----------
-  let ws = null, listo = false, token = leer("token", null);
+  let ws = null, listo = false, token = leer("token", null), jugador = 0, ping = 0;
+  // El QR de la PC trae el código de emparejamiento (?c=1234): se usa solo y se borra de la barra de direcciones.
+  const codigoQR = new URLSearchParams(location.search).get("c");
+  if (codigoQR) history.replaceState(null, "", location.pathname);
 
   function enviar(m) { if (listo && !editando && ws.readyState === 1) ws.send(m); }
+  function enviarAjustes() {
+    if (!listo || !ws || ws.readyState !== 1) return; // quedan pendientes hasta que se conecte
+    for (const k of Object.keys(pendientes)) {
+      ws.send(`k ${k} ${pendientes[k] === null ? "" : pendientes[k]}`);
+      delete pendientes[k];
+    }
+  }
+
+  // Al conectarse, la PC manda todos sus ajustes. Los de la PC mandan; lo que la PC no tiene, se le sube.
+  function recibirAjustes(json) {
+    let srv = {};
+    try { srv = JSON.parse(json) || {}; } catch (e) { return; }
+    let cambio = false;
+    for (const k in srv) {
+      if (!SINCRONIZADOS.test(k)) continue;
+      if (leer(k, null) !== srv[k]) { guardarLocal(k, srv[k]); cambio = true; }
+    }
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (SINCRONIZADOS.test(k) && !(k in srv)) pendientes[k] = localStorage.getItem(k);
+      }
+    } catch (e) {}
+    enviarAjustes();
+    // Si llegaron ajustes nuevos, se recarga una vez para aplicarlos (sin entrar en un bucle).
+    if (cambio && !editando) {
+      let ultima = 0;
+      try { ultima = +sessionStorage.getItem("recargaAjustes") || 0; sessionStorage.setItem("recargaAjustes", Date.now()); } catch (e) {}
+      if (Date.now() - ultima > 15000) location.reload();
+    }
+  }
 
   function conectar(clave) {
     if (ws) { ws.onclose = null; ws.close(); }
@@ -286,12 +358,23 @@
     ws.onmessage = (e) => {
       const p = e.data.split(" ");
       if (p[0] === "ok") {
-        token = p[1]; guardar("token", token); listo = true;
+        token = p[1]; guardarLocal("token", token); listo = true;
         $("emparejar").classList.remove("ver"); puntos(true);
+        if (leer("tutorialVisto", "0") !== "1") setTimeout(abrirTutorial, 600);
       } else if (p[0] === "no") {
-        if (token && clave === token) { token = null; guardar("token", null); }
+        if (token && clave === token) { token = null; guardarLocal("token", null); }
+        if (codigoQR && clave !== codigoQR) { conectar(codigoQR); return; }
         $("error").textContent = "Código incorrecto";
         pedirCodigo();
+      } else if (p[0] === "lleno") {
+        $("error").textContent = "Ya hay 4 celulares conectados a esta PC.";
+        pedirCodigo();
+      } else if (p[0] === "n") {
+        jugador = +p[1]; puntos(true);
+      } else if (p[0] === "c") {
+        recibirAjustes(e.data.slice(2));
+      } else if (p[0] === "p") {
+        ping = Math.round(performance.now() - +p[1]); puntos(true);
       } else if (p[0] === "v") {
         vibrarJuego(+p[1], +p[2]);
       } else if (p[0] === "j") {
@@ -299,12 +382,21 @@
       }
     };
     ws.onclose = () => {
-      listo = false; puntos(false); soltarTodo(false);
+      listo = false; ping = 0; puntos(false); soltarTodo(false);
       if (token) setTimeout(() => conectar(token), 1000);
     };
   }
+  // Ping cada 2 segundos (mensaje chiquito): muestra la demora al lado del puntito.
+  setInterval(() => { if (listo && !document.hidden && ws.readyState === 1) ws.send("p " + Math.round(performance.now())); }, 2000);
 
-  function puntos(ok) { document.querySelectorAll(".punto").forEach((p) => p.classList.toggle("ok", ok)); }
+  function puntos(ok) {
+    document.querySelectorAll(".punto").forEach((p) => p.classList.toggle("ok", ok));
+    const txt = ok ? (jugador ? `J${jugador}` : "") + (ping ? ` · ${ping} ms` : "") : "";
+    document.querySelectorAll(".estadoCon").forEach((s) => {
+      s.textContent = txt;
+      s.classList.toggle("lento", ping > 80);
+    });
+  }
   function pedirCodigo() { $("emparejar").classList.add("ver"); $("codigo").value = ""; }
   $("conectar").onclick = () => { const c = $("codigo").value.trim(); if (c.length === 4) { $("error").textContent = ""; conectar(c); } };
   $("codigo").onkeyup = (e) => { if (e.key === "Enter") $("conectar").onclick(); };
@@ -661,7 +753,7 @@
     });
     const b = espec.barra || { x: 50, y: 9 };
     const barra = nuevo("barra3" + (b.v ? " v" : ""), b);
-    barra.innerHTML = '<div class="punto"></div><div class="tecla menuBtn">☰</div>';
+    barra.innerHTML = '<div class="punto"></div><span class="estadoCon"></span><div class="tecla menuBtn">☰</div>';
     if (opt.modelo === "juego" && juegoElegido) {
       const n = nuevo("nombreJuego", { x: 50, y: 20 }); n.textContent = juegoElegido.nombre;
     }
@@ -712,11 +804,26 @@
     for (const [v, txt] of FUNCIONES) { const o = document.createElement("option"); o.value = v; o.textContent = txt; sel.appendChild(o); }
   })();
 
+  // Deshacer: antes de cada cambio se guarda una copia (hasta 40).
+  let historial = [], cuadricula = leer("cuadricula", "0") === "1";
+  function antes() {
+    historial.push({ espec: copiar(edEspec), base: edEsBase });
+    if (historial.length > 40) historial.shift();
+    $("edDeshacer").disabled = false;
+  }
+  function ponerCuadricula(si) {
+    cuadricula = si; guardarLocal("cuadricula", si ? "1" : "0");
+    $("pad3").classList.toggle("cuadricula", si);
+    $("edCuadricula").classList.toggle("activo", si);
+  }
+
   function entrarEditor() {
     $("menu").classList.remove("ver");
     soltarTodo(true);
     editando = true; edEsBase = false;
     edEspec = copiar(especActual);
+    historial = []; $("edDeshacer").disabled = true;
+    ponerCuadricula(cuadricula);
     $("pad3").classList.add("editando");
     $("edArriba").hidden = $("edPanel").hidden = false;
     dibujarControl(edEspec);
@@ -796,16 +903,25 @@
     }
     if (a === "cancelar") { salirEditor(); return; }
     if (a === "invertir") { document.body.classList.toggle("edInv"); return; }
-    if (a === "restaurar") { edEspec = copiar(especBase(claveActual())); edSel = -1; redibujar(); edEsBase = true; return; }
-    if (ACCIONES[a] && (edSel >= 0 || a.startsWith("add"))) { ACCIONES[a](); cambio(); redibujar(); }
+    if (a === "cuadricula") { ponerCuadricula(!cuadricula); return; }
+    if (a === "deshacer") {
+      const h = historial.pop(); if (!h) return;
+      edEspec = h.espec; edEsBase = h.base; edSel = -1; redibujar();
+      $("edDeshacer").disabled = !historial.length; return;
+    }
+    if (a === "restaurar") { antes(); edEspec = copiar(especBase(claveActual())); edSel = -1; redibujar(); edEsBase = true; return; }
+    if (ACCIONES[a] && (edSel >= 0 || a.startsWith("add"))) { antes(); ACCIONES[a](); cambio(); redibujar(); }
   });
   $("edColores").onclick = (ev) => {
     const s = ev.target.closest(".sw"); if (!s || edSel < 0) return;
+    antes();
     const e = edEspec.el[edSel];
     if (s.dataset.color) e.c = s.dataset.color; else delete e.c;
     cambio(); redibujar();
   };
+  $("edTexto").onfocus = $("edSub").onfocus = () => { if (edSel >= 0) antes(); };
   $("edFuncion").onchange = (ev) => {
+    antes();
     const e = edEspec.el[edSel], viejo = funcionDe(e), v = ev.target.value;
     delete e.b; delete e.t;
     for (const parte of v.split("+")) { const [k, val] = parte.split(":"); e[k] = val; }
@@ -817,7 +933,7 @@
     const e = edEspec.el[edSel]; if (ev.target.value) e.sub = ev.target.value; else delete e.sub;
     cambio(); redibujar();
   };
-  $("edStick").onchange = (ev) => { edEspec.el[edSel].s = ev.target.value; cambio(); redibujar(); };
+  $("edStick").onchange = (ev) => { antes(); edEspec.el[edSel].s = ev.target.value; cambio(); redibujar(); };
   $("editor").onclick = entrarEditor;
 
   // Tocar y arrastrar en modo edición (no se manda nada a la PC).
@@ -834,10 +950,14 @@
   function edMover(e) {
     const a = edArrastre;
     if (!a || a.id !== e.pointerId) return;
-    a.e.x = lim(a.ex + (e.clientX - a.x0) / a.w * 100, 0, 100);
-    a.e.y = lim(a.ey + (e.clientY - a.y0) / a.h * 100, 0, 100);
-    a.el.style.left = a.e.x + "%"; a.el.style.top = a.e.y + "%";
-    if (a.e.x !== a.ex || a.e.y !== a.ey) { cambio(); document.body.classList.add("arrastrando"); }
+    let x = lim(a.ex + (e.clientX - a.x0) / a.w * 100, 0, 100);
+    let y = lim(a.ey + (e.clientY - a.y0) / a.h * 100, 0, 100);
+    if (cuadricula) { x = Math.round(x / 2.5) * 2.5; y = Math.round(y / 2.5) * 2.5; } // se pega a la cuadrícula
+    if (x === a.e.x && y === a.e.y) return;
+    if (!a.movido) { antes(); a.movido = true; } // guardar para Deshacer solo si de verdad se movió
+    a.e.x = x; a.e.y = y;
+    a.el.style.left = x + "%"; a.el.style.top = y + "%";
+    cambio(); document.body.classList.add("arrastrando");
   }
   function edFin(e) {
     if (edArrastre && edArrastre.id === e.pointerId) edArrastre = null;
@@ -891,11 +1011,46 @@
   $("listaCerrar").onclick = () => $("lista").classList.remove("ver");
   $("optAuto").onchange = (e) => { opt.auto = e.target.checked; guardar("auto", opt.auto ? "1" : "0"); };
 
+  // ---------- Tutorial del primer uso ----------
+  const TUTORIAL = [
+    ["🎮", "¡Listo, estás conectado!", "El puntito verde de arriba indica que el control está conectado a la PC. Al lado ves tu número de jugador y la demora (ms)."],
+    ["☰", "Elegí tu control", "En el menú ☰ elegís entre Completo, Alargado o Por juego: muestra tus juegos de Steam y arma un control cómodo para cada uno."],
+    ["✏️", "Hacelo a tu gusto", "En ☰ → Editor de control movés, agrandás, pintás y cambiás cualquier botón. Tus cambios se guardan en la PC."],
+    ["📱", "Giroscopio", "En ☰ → Giroscopio: «Volante» para inclinar el celular como un volante, o «Apuntar» para mover la mira moviendo el celular."],
+  ];
+  let tutPaso = 0;
+  function mostrarPaso() {
+    const pasos = seguro ? TUTORIAL : TUTORIAL.slice(0, 3); // sin HTTPS no hay giroscopio
+    const [icono, titulo, texto] = pasos[tutPaso];
+    $("tutIcono").textContent = icono; $("tutTitulo").textContent = titulo; $("tutTexto").textContent = texto;
+    $("tutPuntos").innerHTML = pasos.map((_, i) => `<span class="${i === tutPaso ? "si" : ""}"></span>`).join("");
+    $("tutSiguiente").textContent = tutPaso === pasos.length - 1 ? "¡A jugar!" : "Siguiente";
+    $("tutSaltar").hidden = tutPaso === pasos.length - 1;
+    return pasos.length;
+  }
+  function abrirTutorial() {
+    if (editando) return;
+    soltarTodo(true);
+    $("menu").classList.remove("ver");
+    tutPaso = 0; mostrarPaso();
+    $("tutorial").classList.add("ver");
+  }
+  function cerrarTutorial() { $("tutorial").classList.remove("ver"); guardar("tutorialVisto", "1"); }
+  $("tutSiguiente").onclick = () => {
+    const total = mostrarPaso();
+    if (tutPaso >= total - 1) { cerrarTutorial(); return; }
+    tutPaso++; mostrarPaso();
+  };
+  $("tutSaltar").onclick = cerrarTutorial;
+  $("verTutorial").onclick = abrirTutorial;
+
   // ---------- Arranque ----------
   if (juegoElegido) ponerJuego(juegoElegido, false); // deja dibujado el control del último juego
   ponerModelo(leer("modelo", "completo"));
   aplicarGiro();
-  if (token) conectar(token); else pedirCodigo();
+  if (token) conectar(token);
+  else if (codigoQR) conectar(codigoQR); // vino del QR: se empareja solo, sin escribir nada
+  else pedirCodigo();
 })();
 </script>
 </body>

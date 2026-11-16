@@ -58,34 +58,43 @@ Para armar tu propio `ControlCelular.exe`, ejecutá **`construir.bat`**. Lo deja
 
 ### En la PC (cada vez)
 
-Abrí **Control Celular**: `ControlCelular.exe`, o `iniciar.bat` si usás la opción con Python. Se abre una ventana
-como esta:
+Abrí **Control Celular**: `ControlCelular.exe`, o `iniciar.bat` si usás la opción con Python. La ventana muestra un
+**código QR**, la dirección y el código de emparejamiento. Al lado del reloj de Windows aparece el **ícono del
+control**, con este menú:
 
-```
-  CONTROL CELULAR listo
-  Control (app):         https://192.168.0.10:8443
-  Primera vez / ayuda:   http://192.168.0.10:8765
-  Código de emparejamiento:  1234
-```
+- **Mostrar QR para conectar:** abre el QR en grande, en el navegador de la PC.
+- **Mostrar la ventana:** muestra u oculta la ventana negra.
+- **Iniciar con Windows:** arranca solo al prender la PC, oculto, sin la ventana.
+- **Salir.**
 
-Dejá esa ventana abierta mientras juegues. Para cerrar el control, cerrala o apretá `Ctrl+C`.
+Al pasar el mouse por el ícono, te dice qué jugadores están conectados.
 
 ### En el celular (la primera vez)
 
-1. Abrí en Chrome la dirección de **«Primera vez / ayuda»**: la de `http://` con el puerto `:8765`.
-2. Seguí los 3 pasos de esa página para instalar el **certificado**. Esto es necesario para la app y el giroscopio.
-   - Tocá **Descargar certificado**.
-   - En **Ajustes** del celular, buscá «certificado de CA» → **Instalar certificado → Certificado de CA** → elegí
-     `control-celular-ca.crt`.
-   - Volvé a la página: detecta sola que el certificado está instalado y te lleva al control.
-3. Escribí el **código de emparejamiento** que aparece en la PC. Se pide solo la primera vez.
-4. En el menú **☰**, tocá **Instalar app**. Si no aparece, usá el menú de Chrome → **Instalar app**.
+1. **Escaneá el QR** con la cámara del celular, o abrí en Chrome la dirección `http://…:8765` que muestra la PC.
+2. Seguí los pasos de esa página para instalar el **certificado**, necesario para la app y el giroscopio. La página
+   reconoce la marca de tu celular (Samsung, Xiaomi, Motorola…) y te muestra el camino exacto en Ajustes. Cuando
+   lo instalás, lo detecta sola y te lleva al control.
+3. Si llegaste por el QR, **se empareja solo**. Si no, escribí el código de emparejamiento que muestra la PC.
+4. Aparece un **tutorial corto**. Después, en el menú **☰** tocá **Instalar app**. Si no aparece, usá el menú de
+   Chrome → **Instalar app**.
 
-Después de la primera vez, abrís la app y se conecta sola. El puntito de arriba se pone **verde** cuando está
-conectada.
+Después de la primera vez, abrís la app y se conecta sola. Arriba se ve un puntito **verde** cuando está conectada,
+tu **número de jugador** (J1, J2…) y la **demora** en milisegundos. Si la demora pasa de 80 ms, se pone en naranja:
+el WiFi anda lento.
 
 > **¿No querés instalar el certificado?** Podés usar el control igual, desde la dirección `http://...:8765`, tocando
 > «control sin app ni giroscopio». Sin el certificado no hay app instalada ni giroscopio.
+
+### Varios jugadores
+
+Se pueden conectar **hasta 4 celulares a la vez**. Cada uno es un control de Xbox distinto (jugador 1, 2, 3 y 4).
+Cada celular, cuando vuelve, recupera siempre su mismo número.
+
+### Tus ajustes quedan en la PC
+
+Las ediciones del control y las opciones se guardan **en la PC**, no solo en el celular. Si cambiás de celular, si
+cambia la IP de la PC o si reinstalás la app, al conectarte recuperás todo como lo dejaste.
 
 ---
 
@@ -97,14 +106,18 @@ conectada.
   - **Por juego (Steam):** muestra tus juegos instalados con su portada. Al tocar uno se arma un control según su
     tipo: carreras, disparos, plataformas, deportes, pelea o completo. Si la opción está prendida, el control
     cambia solo cuando abrís un juego en la PC. En «Control para…» podés elegir otro tipo.
-- **Editor de control:** tocá un botón para cambiarle el tamaño, la forma, el color, qué botón manda o el texto,
-  y arrastralo para moverlo. También podés agregar botones, sticks y crucetas. Mientras editás, no se manda nada
-  a la PC. Cada control guarda su propia edición.
+- **Editor de control:**
+  - tocá un botón para cambiarle el tamaño, la forma, el color, qué botón manda o el texto, y arrastralo para
+    moverlo;
+  - podés agregar botones, sticks y crucetas;
+  - tiene **Deshacer** y una **Cuadrícula** para alinear los botones;
+  - mientras editás, no se manda nada a la PC, y cada control guarda su propia edición.
 - **Giroscopio:**
   - **Volante:** inclinás el celular y mueve el stick izquierdo.
   - **Apuntar:** movés el celular y mueve el stick derecho.
   - Se ajusta con sensibilidad e invertir.
 - **Vibración:** al tocar los botones, y cuando el juego hace vibrar el control.
+- **Ver tutorial:** repite la guía del primer uso.
 
 ---
 
@@ -129,6 +142,8 @@ conectada.
 
 - Todo funciona **dentro de tu red local**. No se conecta a internet ni manda tu biblioteca de Steam a ningún lado.
 - Para conectarse, un celular tiene que conocer el **código de emparejamiento**, que solo aparece en tu pantalla.
+  El QR lleva ese código adentro: por eso la página del QR solo se abre desde la propia PC. El código cambia cada
+  vez que abrís el programa.
 - El certificado lo crea tu propia PC la primera vez (queda en `%LOCALAPPDATA%\ControlCelular\certs`, o en `certs/`
   con la opción de Python). Está **restringido a direcciones de redes
   privadas**: aunque alguien lo robara, no serviría para hacerse pasar por ningún sitio de internet.
@@ -142,6 +157,7 @@ conectada.
 | Archivo | Qué hace |
 |---|---|
 | `server.py` | Servidor: crea el control virtual (vgamepad + ViGEmBus), sirve la página y recibe los botones por WebSocket |
+| `bandeja.py` | El ícono al lado del reloj (QR, mostrar u ocultar la ventana, iniciar con Windows, salir) |
 | `red.py` | Revisa el firewall y si la red es privada; si falta algo, pregunta y lo arregla con permiso de Windows |
 | `rutas.py` | Dónde están los archivos, tanto en Python como en el `.exe` |
 | `certs.py` | Crea el certificado propio para HTTPS en la red local |

@@ -13,7 +13,9 @@ if not exist ".venv\Scripts\python.exe" call instalar.bat || exit /b 1
   --icon "%~dp0herramientas\icono.ico" ^
   --add-data "%~dp0web;web" ^
   --collect-all vgamepad ^
-  --distpath dist --workpath build --specpath build ^
+  --hidden-import pystray._win32 ^
+  --hidden-import bandeja ^
+  --distpath dist --workpath "%TEMP%\ControlCelular-build" --specpath "%TEMP%\ControlCelular-build" ^
   server.py || goto :error
 
 echo.

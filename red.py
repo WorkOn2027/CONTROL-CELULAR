@@ -64,13 +64,13 @@ def _preguntar(texto: str) -> bool:
         return False
 
 
-def revisar() -> None:
-    """Se llama al arrancar. Si todo está bien, no dice nada."""
+def revisar(preguntar: bool = True) -> None:
+    """Se llama al arrancar. Si todo está bien, no dice nada. Con preguntar=False solo avisa (arranque oculto)."""
     try:
         if not regla_existe():
             print("  Para que el celular se pueda conectar hay que abrir el firewall de Windows")
             print("  (solo los puertos del control, solo en redes privadas y solo para tu red de casa).")
-            if _preguntar("  ¿Lo abro ahora? Windows te va a pedir permiso (S/N): "):
+            if preguntar and _preguntar("  ¿Lo abro ahora? Windows te va a pedir permiso (S/N): "):
                 print("  " + ("Listo: firewall abierto." if crear_regla() else
                               "No se pudo (¿tocaste «No» en el permiso?). Podés volver a abrir el programa."))
             print()
@@ -79,7 +79,7 @@ def revisar() -> None:
             print("  Tu red está marcada como PÚBLICA, así el celular no se puede conectar:")
             for r in publicas:
                 print("    -", r)
-            if _preguntar("  ¿Es la red de tu casa? ¿La marco como PRIVADA? (S/N): "):
+            if preguntar and _preguntar("  ¿Es la red de tu casa? ¿La marco como PRIVADA? (S/N): "):
                 print("  " + ("Listo: red marcada como privada." if hacer_privadas() else
                               "No se pudo cambiar. Hacelo en Configuración > Red e Internet > tu red > Privada."))
             print()
