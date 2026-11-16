@@ -78,7 +78,16 @@ def guardar_tokens(tokens: set[str]) -> None:
 
 tokens = cargar_tokens()
 codigo = f"{secrets.randbelow(10000):04d}"
-pad = vg.VX360Gamepad()
+try:
+    pad = vg.VX360Gamepad()
+except Exception as e:  # casi siempre: falta el driver ViGEmBus
+    print()
+    print("  No pude crear el control virtual de Xbox:", e)
+    print("  Falta el driver ViGEmBus. Instalalo desde:")
+    print("    https://github.com/nefarius/ViGEmBus/releases  (archivo ViGEmBus_..._x64_x86_arm64.exe)")
+    print("  y después volvé a abrir iniciar.bat.")
+    print()
+    raise SystemExit(1)
 cliente = None  # conexión activa (una sola a la vez)
 loop = None
 
@@ -275,6 +284,8 @@ async def main():
         print(f"  Control (app):         https://{ip}:{PUERTO_SEGURO}")
         print(f"  Primera vez / ayuda:   http://{ip}:{PUERTO}")
         print(f"  Código de emparejamiento:  {codigo}")
+        print("  El celular tiene que estar en la misma red WiFi que esta PC.")
+        print("  ¿No conecta? Ejecutá permitir-firewall.bat (una sola vez) y fijate que tu red sea «Privada».")
         print("  (Ctrl+C para cerrar)")
         print()
         await asyncio.to_thread(biblioteca)
