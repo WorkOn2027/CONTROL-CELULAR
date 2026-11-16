@@ -16,6 +16,7 @@ está firmado.
 - **Hasta 4 celulares a la vez**, cada uno es un control de Xbox distinto (jugador 1 a 4).
 - **Botones turbo y fijo** desde el editor: el turbo se repite solo mientras lo mantenés; el fijo queda apretado
   con un toque y se suelta con otro.
+- **Ajustes de cada stick:** zona muerta, respuesta (suave, normal o rápida) y recorrido.
 - **Demora visible** al lado del número de jugador.
 - **Modo noche.**
 

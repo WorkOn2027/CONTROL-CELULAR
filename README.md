@@ -129,6 +129,10 @@ iguales.
   - **Apuntar:** movés el celular y mueve el stick derecho.
   - Se ajusta con sensibilidad e invertir.
 - **Vibración:** al tocar los botones, y cuando el juego hace vibrar el control.
+- **Sticks:** para cada stick, por separado:
+  - **zona muerta:** cuánto hay que mover antes de que responda, para que no se mueva solo;
+  - **respuesta:** suave (más precisa en movimientos chicos, ideal para apuntar), normal o rápida;
+  - **recorrido:** cuánto hay que mover el dedo para llegar al máximo.
 - **Modo noche:** colores oscuros en el control, el menú y el editor, para jugar con poca luz. Apagado, el control
   es blanco. Se guarda para cada celular.
 - **Ver tutorial:** repite la guía del primer uso.

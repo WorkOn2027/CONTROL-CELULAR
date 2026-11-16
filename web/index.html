@@ -158,6 +158,8 @@
               gap: 3vh 5vw; padding: 5vh 6vw; overflow-y: auto; touch-action: pan-y; text-align: left; }
   #menu h2 { font-size: 4.6vh; grid-column: 1 / -1; }
   #menu .col { display: flex; flex-direction: column; gap: 3vh; align-items: flex-start; }
+  #menu .ayudaSticks { grid-column: 1 / -1; font-size: 3vh; opacity: .75; line-height: 1.4; }
+  .stickOpts .valor { min-width: 7vh; display: inline-block; font-weight: 700; }
   #menu .ancho { grid-column: 1 / -1; display: flex; gap: 3vw; flex-wrap: wrap; }
   #error { color: var(--B); font-size: 4vh; min-height: 5vh; }
   #tutorial { z-index: 15; }
@@ -281,6 +283,12 @@
     <label><input type="checkbox" id="optInvX"> Invertir horizontal</label>
     <label><input type="checkbox" id="optInvY"> Invertir vertical</label>
   </div>
+  <h2>Sticks</h2>
+  <div class="col stickOpts" data-k="L"><b>Stick izquierdo</b></div>
+  <div class="col stickOpts" data-k="R"><b>Stick derecho</b></div>
+  <small class="ayudaSticks"><b>Zona muerta:</b> cuánto hay que mover antes de que responda (más = no se mueve solo).
+    <b>Respuesta:</b> suave es más precisa en movimientos chicos (ideal para apuntar); rápida llega al máximo antes.
+    <b>Recorrido:</b> cuánto hay que mover el dedo para llegar al máximo (menos = movés menos el dedo).</small>
   <div class="ancho">
     <button id="cerrar">Volver al control</button>
     <button id="centrar" hidden>Centrar volante</button>
@@ -326,7 +334,7 @@
   const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const guardarLocal = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
   // Estos ajustes también se guardan en la PC: así cualquier celular (o la misma app con otra IP) los recupera.
-  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto|noche)$/;
+  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto|noche)$|^(dz|curva|alc)[LR]$/;
   const pendientes = {};
   const guardar = (k, v) => {
     guardarLocal(k, v);
@@ -579,11 +587,23 @@
       }
     }
   }
+  // Ajustes de cada stick (☰ → Sticks): zona muerta, respuesta y recorrido.
+  const CURVAS = { suave: 1.7, normal: 1, rapida: 0.6 };
+  const ajusteStick = (k) => ({
+    dz: +leer("dz" + k, "5") / 100,                         // 0-0.3: lo que hay que mover antes de que responda
+    exp: CURVAS[leer("curva" + k, "normal")] || 1,          // >1 más preciso cerca del centro, <1 más rápido
+    alc: +leer("alc" + k, "100") / 100,                     // 0.5-1: cuánto mover el dedo para llegar al máximo
+  });
   function moverStick(s, px, py) {
-    let dx = (px - s.cx) / s.r, dy = (py - s.cy) / s.r;
-    const d = Math.hypot(dx, dy);
-    if (d > 1) { dx /= d; dy /= d; }
-    s.x = Math.round(dx * 1000); s.y = Math.round(-dy * 1000);
+    const a = ajusteStick(s === sticks.L ? "L" : "R");
+    let dx = (px - s.cx) / (s.r * a.alc), dy = (py - s.cy) / (s.r * a.alc);
+    let m = Math.hypot(dx, dy);
+    if (m > 1) { dx /= m; dy /= m; m = 1; }
+    if (m <= a.dz) { s.x = 0; s.y = 0; }
+    else {
+      const salida = Math.pow((m - a.dz) / (1 - a.dz), a.exp); // sin salto al salir de la zona muerta
+      s.x = Math.round(dx / m * salida * 1000); s.y = Math.round(-dy / m * salida * 1000);
+    }
     programar();
   }
   window.addEventListener("resize", () => { for (const k in sticks) sticks[k].radioVis = 1; });
@@ -765,6 +785,7 @@
   function abrirMenu() {
     soltarTodo(true);
     $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego; $("optNoche").checked = opt.noche;
+    mostrarSticks();
     $("optGiro").value = opt.giro; $("optSens").value = opt.sens;
     $("optInvX").checked = opt.invX; $("optInvY").checked = opt.invY;
     $("menu").classList.add("ver");
@@ -772,6 +793,28 @@
   const casilla = (id, clave) => $(id).onchange = (e) => { opt[clave] = e.target.checked; guardar(clave, opt[clave] ? "1" : "0"); };
   casilla("optToque", "toque"); casilla("optJuego", "juego"); casilla("optInvX", "invX"); casilla("optInvY", "invY");
   casilla("optNoche", "noche"); $("optNoche").addEventListener("change", aplicarNoche);
+
+  // ☰ → Sticks: zona muerta, respuesta y recorrido de cada stick (se aplican al instante).
+  const DEF_STICK = { dz: "5", curva: "normal", alc: "100" };
+  document.querySelectorAll(".stickOpts").forEach((col) => {
+    const k = col.dataset.k;
+    col.insertAdjacentHTML("beforeend",
+      `<label>Zona muerta <input type="range" min="0" max="30" step="1" data-st="dz${k}"> <span class="valor" data-v="dz${k}"></span></label>` +
+      `<label>Respuesta <select data-st="curva${k}"><option value="suave">Suave (precisa)</option>` +
+      `<option value="normal">Normal</option><option value="rapida">Rápida</option></select></label>` +
+      `<label>Recorrido <input type="range" min="50" max="100" step="5" data-st="alc${k}"> <span class="valor" data-v="alc${k}"></span></label>`);
+  });
+  function mostrarSticks() {
+    document.querySelectorAll("[data-st]").forEach((c) => {
+      const clave = c.dataset.st;
+      c.value = leer(clave, DEF_STICK[clave.slice(0, -1)]);
+      const v = document.querySelector(`[data-v="${clave}"]`);
+      if (v) v.textContent = c.value + "%";
+    });
+  }
+  document.querySelectorAll("[data-st]").forEach((c) => c.addEventListener("input", () => {
+    guardar(c.dataset.st, c.value); mostrarSticks();
+  }));
   $("optJuego").addEventListener("change", () => { if (!opt.juego && puedeVibrar) navigator.vibrate(0); });
   $("optGiro").onchange = (e) => { opt.giro = e.target.value; guardar("giro", opt.giro); aplicarGiro(); };
   $("optSens").oninput = (e) => { opt.sens = +e.target.value; guardar("sens", String(opt.sens)); };
