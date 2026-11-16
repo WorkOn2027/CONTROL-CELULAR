@@ -31,67 +31,75 @@
 <body>
 <main>
   <h1>Control Celular</h1>
-  <div>Esto se hace <b>una sola vez</b>. Hace falta para que el control se pueda instalar como app y para usar el giroscopio.</div>
+  <div data-en="This is done <b>only once</b>. It's needed to install the controller as an app and to use the gyro.">Esto se hace <b>una sola vez</b>. Hace falta para que el control se pueda instalar como app y para usar el giroscopio.</div>
 
-  <div class="caja">Certificado: <span id="estado">revisando…</span></div>
+  <div class="caja"><span data-en="Certificate:">Certificado:</span> <span id="estado">…</span></div>
 
   <div class="caja">
-    <span class="n">1</span><b>Descargá el certificado</b>
-    <a class="boton" href="/ca.crt" download="control-celular-ca.crt">Descargar certificado</a>
+    <span class="n">1</span><b data-en="Download the certificate">Descargá el certificado</b>
+    <a class="boton" href="/ca.crt" download="control-celular-ca.crt" data-en="Download certificate">Descargar certificado</a>
   </div>
 
   <div class="caja">
-    <span class="n">2</span><b>Instalalo en Ajustes</b>
+    <span class="n">2</span><b data-en="Install it in Settings">Instalalo en Ajustes</b>
     <div class="marcas" id="marcas">
       <button data-m="samsung">Samsung</button><button data-m="xiaomi">Xiaomi / Redmi / POCO</button>
-      <button data-m="android">Motorola / Pixel / otros</button>
+      <button data-m="android" data-en="Motorola / Pixel / others">Motorola / Pixel / otros</button>
     </div>
     <div class="guia" data-g="samsung">
       <ol>
-        <li>Abrí <b>Ajustes</b> → <b>Seguridad y privacidad</b>.</li>
-        <li>Entrá a <b>Más ajustes de seguridad</b>.</li>
-        <li>Tocá <b>Instalar desde almacenamiento del dispositivo</b> → <b>Certificado de CA</b>.</li>
-        <li>Tocá <b>Instalar de todos modos</b>, confirmá con tu PIN o patrón y elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
+        <li data-en="Open <b>Settings</b> → <b>Security and privacy</b>.">Abrí <b>Ajustes</b> → <b>Seguridad y privacidad</b>.</li>
+        <li data-en="Go to <b>More security settings</b>.">Entrá a <b>Más ajustes de seguridad</b>.</li>
+        <li data-en="Tap <b>Install from device storage</b> → <b>CA certificate</b>.">Tocá <b>Instalar desde almacenamiento del dispositivo</b> → <b>Certificado de CA</b>.</li>
+        <li data-en="Tap <b>Install anyway</b>, confirm with your PIN or pattern and choose <b>control-celular-ca.crt</b> (in Downloads).">Tocá <b>Instalar de todos modos</b>, confirmá con tu PIN o patrón y elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
       </ol>
     </div>
     <div class="guia" data-g="xiaomi">
       <ol>
-        <li>Abrí <b>Ajustes</b> → <b>Contraseñas y seguridad</b> → <b>Privacidad</b>.</li>
-        <li>Entrá a <b>Cifrado y credenciales</b> → <b>Instalar un certificado</b>.</li>
-        <li>Tocá <b>Certificado de CA</b> → <b>Instalar de todas formas</b>.</li>
-        <li>Elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
+        <li data-en="Open <b>Settings</b> → <b>Passwords &amp; security</b> → <b>Privacy</b>.">Abrí <b>Ajustes</b> → <b>Contraseñas y seguridad</b> → <b>Privacidad</b>.</li>
+        <li data-en="Go to <b>Encryption &amp; credentials</b> → <b>Install a certificate</b>.">Entrá a <b>Cifrado y credenciales</b> → <b>Instalar un certificado</b>.</li>
+        <li data-en="Tap <b>CA certificate</b> → <b>Install anyway</b>.">Tocá <b>Certificado de CA</b> → <b>Instalar de todas formas</b>.</li>
+        <li data-en="Choose <b>control-celular-ca.crt</b> (in Downloads).">Elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
       </ol>
     </div>
     <div class="guia" data-g="android">
       <ol>
-        <li>Abrí <b>Ajustes</b> → <b>Seguridad y privacidad</b> → <b>Más ajustes de seguridad</b>.</li>
-        <li>Entrá a <b>Encriptación y credenciales</b> → <b>Instalar un certificado</b>.</li>
-        <li>Tocá <b>Certificado de CA</b> → <b>Instalar de todas formas</b>.</li>
-        <li>Elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
+        <li data-en="Open <b>Settings</b> → <b>Security &amp; privacy</b> → <b>More security settings</b>.">Abrí <b>Ajustes</b> → <b>Seguridad y privacidad</b> → <b>Más ajustes de seguridad</b>.</li>
+        <li data-en="Go to <b>Encryption &amp; credentials</b> → <b>Install a certificate</b>.">Entrá a <b>Encriptación y credenciales</b> → <b>Instalar un certificado</b>.</li>
+        <li data-en="Tap <b>CA certificate</b> → <b>Install anyway</b>.">Tocá <b>Certificado de CA</b> → <b>Instalar de todas formas</b>.</li>
+        <li data-en="Choose <b>control-celular-ca.crt</b> (in Downloads).">Elegí <b>control-celular-ca.crt</b> (en Descargas).</li>
       </ol>
     </div>
-    <small><b>¿No lo encontrás?</b> En Ajustes tocá la lupa y buscá <b>«certificado de CA»</b>: los nombres cambian un
+    <small data-en="<b>Can't find it?</b> In Settings, tap the magnifying glass and search for <b>“CA certificate”</b>: names change a bit between Android versions. Android may ask you to set a screen lock (PIN or pattern). You may see a “network may be monitored” notice: that's normal with your own certificates. This one only works for addresses on your home network, not for websites."><b>¿No lo encontrás?</b> En Ajustes tocá la lupa y buscá <b>«certificado de CA»</b>: los nombres cambian un
       poco según la versión de Android. Android puede pedirte tener un bloqueo de pantalla (PIN o patrón).
       Puede aparecer un aviso de «la red podría estar supervisada»: es normal con certificados propios. Este solo
       sirve para direcciones de tu red de casa, no para sitios de internet.</small>
   </div>
 
   <div class="caja">
-    <span class="n">3</span><b>Volvé acá</b>
-    <div>Cuando el certificado esté instalado, esta página lo detecta sola y te lleva al control.
+    <span class="n">3</span><b data-en="Come back here">Volvé acá</b>
+    <div data-en="Once the certificate is installed, this page notices it and takes you to the controller. There, in the ☰ menu, you'll be able to <b>install the app</b>.">Cuando el certificado esté instalado, esta página lo detecta sola y te lleva al control.
       Ahí, en el menú ☰, vas a poder <b>instalar la app</b>.</div>
-    <a class="boton sec" id="ir" href="#">Ir al control</a>
+    <a class="boton sec" id="ir" href="#" data-en="Go to the controller">Ir al control</a>
   </div>
 
-  <div class="caja"><small>¿No querés instalar nada? Podés usar el
-    <a href="/index.html">control sin app ni giroscopio</a> igual.</small></div>
+  <div class="caja"><small data-en="Don't want to install anything? You can still use the <a id=&quot;sinApp&quot; href=&quot;/index.html&quot;>controller without app or gyro</a>.">¿No querés instalar nada? Podés usar el
+    <a id="sinApp" href="/index.html">control sin app ni giroscopio</a> igual.</small></div>
 </main>
 <script>
+  // Inglés si el celular está en inglés: cada texto tiene su versión en data-en.
+  const EN = !(navigator.language || "es").toLowerCase().startsWith("es");
+  if (EN) {
+    document.documentElement.lang = "en";
+    document.title = "Set up Control Celular";
+    document.querySelectorAll("[data-en]").forEach((el) => { el.innerHTML = el.dataset.en; });
+  }
+  const T = (es, en) => (EN ? en : es);
   // Si vino del QR, el código de emparejamiento pasa al control para que se conecte solo.
   const c = new URLSearchParams(location.search).get("c");
   const base = `https://${location.hostname}:8443/`;
   const seguro = base + (c && /^\d{4}$/.test(c) ? `?c=${c}` : "");
-  document.querySelector('a[href="/index.html"]').href = "/index.html" + (c ? `?c=${encodeURIComponent(c)}` : "");
+  document.getElementById("sinApp").href = "/index.html" + (c ? `?c=${encodeURIComponent(c)}` : "");
 
   // Guía según la marca (se elige sola por el modelo del celular; se puede cambiar tocando).
   function marca(m) {
@@ -108,10 +116,10 @@
   async function revisar() {
     try {
       await fetch(base + "ping", { mode: "no-cors", cache: "no-store" });
-      estado.textContent = "instalado ✓"; estado.className = "ok";
+      estado.textContent = T("instalado ✓", "installed ✓"); estado.className = "ok";
       if (!yaFue) { yaFue = true; setTimeout(() => location.href = seguro, 800); }
     } catch (e) {
-      estado.textContent = "todavía no está instalado"; estado.className = "no";
+      estado.textContent = T("todavía no está instalado", "not installed yet"); estado.className = "no";
       setTimeout(revisar, 3000);
     }
   }

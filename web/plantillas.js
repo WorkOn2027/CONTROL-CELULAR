@@ -5,8 +5,8 @@
 // El menú (☰) y el puntito de conexión se agregan solos arriba al centro.
 (() => {
   const sel = [
-    { k: "btn", x: 39, y: 9, w: 11, h: 7, b: "BACK", txt: "Select" },
-    { k: "btn", x: 61, y: 9, w: 11, h: 7, b: "START", txt: "Start" },
+    { k: "btn", x: 34, y: 9, w: 11, h: 7, b: "BACK", txt: "Select" },
+    { k: "btn", x: 66, y: 9, w: 11, h: 7, b: "START", txt: "Start" },
   ];
   const hombros = (lt, rt) => [
     { k: "btn", x: 9, y: 9, w: 30, h: 12, t: "L", txt: lt || "LT", sub: lt ? "LT" : "" },

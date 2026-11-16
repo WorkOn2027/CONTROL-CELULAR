@@ -329,6 +329,8 @@
           <input type="checkbox" class="interruptor" id="optZurdo"></label>
         <label class="fila"><span class="txt"><b>La PC lo ve como</b><small>DualShock 4 sirve para juegos y emuladores de PlayStation.</small></span>
           <select id="optMando"><option value="xbox">Xbox 360</option><option value="ds4">DualShock 4</option></select></label>
+        <label class="fila"><span class="txt"><b>Idioma</b><small>El idioma de la página del control.</small></span>
+          <select id="optIdioma"><option value="auto">Automático</option><option value="es">Español</option><option value="en">English</option></select></label>
       </section>
       <section class="ajPanel" data-panel="giro" id="giroOpts">
         <label class="fila"><span class="txt"><b>Modo</b><small>Mover el celular para controlar el juego.</small></span>
@@ -389,15 +391,17 @@
 
 <div class="capa" id="girar">Girá el celular (acostado) ↻</div>
 
+<script src="/i18n.js"></script>
 <script src="/plantillas.js"></script>
 <script>
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
+  traducirDOM(document.body); // inglés si el celular está en inglés (o si se eligió en ⚙ → Idioma)
   const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
   const guardarLocal = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
   // Estos ajustes también se guardan en la PC: así cualquier celular (o la misma app con otra IP) los recupera.
-  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto|noche|zurdo|mando)$|^(dz|curva|alc)[LR]$/;
+  const SINCRONIZADOS = /^(control_|tipo_)|^(modelo|juegoElegido|ultimoAuto|toque|juego|giro|sens|invX|invY|auto|tutorialVisto|noche|zurdo|mando|idioma)$|^(dz|curva|alc)[LR]$/;
   const pendientes = {};
   const guardar = (k, v) => {
     guardarLocal(k, v);
@@ -480,13 +484,13 @@
     let lista = [];
     try { lista = JSON.parse(json) || []; } catch (e) {}
     const cont = $("copiarLista"); cont.textContent = "";
-    $("copiarEstado").textContent = lista.length ? "Elegí de qué celular copiar:" : "No hay otros celulares con ajustes guardados en esta PC.";
+    $("copiarEstado").textContent = tr(lista.length ? "Elegí de qué celular copiar:" : "No hay otros celulares con ajustes guardados en esta PC.");
     for (const c of lista) {
       const b = document.createElement("button");
       const dias = c.visto ? Math.floor((Date.now() / 1000 - c.visto) / 86400) : null;
-      b.textContent = c.nombre + (dias === null ? "" : dias < 1 ? " · usado hoy" : ` · hace ${dias} días`);
+      b.textContent = c.nombre + (dias === null ? "" : dias < 1 ? tr(" · usado hoy") : tr(" · hace {n} días", dias));
       b.onclick = () => {
-        if (confirm(`¿Copiar los ajustes de «${c.nombre}»? Se reemplazan los de este celular (controles editados y opciones).`)) {
+        if (confirm(tr("¿Copiar los ajustes de «{n}»? Se reemplazan los de este celular (controles editados y opciones).", c.nombre))) {
           ws.send("cp " + c.id);
         }
       };
@@ -524,17 +528,17 @@
       } else if (p[0] === "no") {
         if (token && clave === token) { token = null; guardarLocal("token", null); }
         if (codigoQR && clave !== codigoQR) { conectar(codigoQR); return; }
-        $("error").textContent = "Código incorrecto";
+        $("error").textContent = tr("Código incorrecto");
         pedirCodigo();
       } else if (p[0] === "espera") {
-        $("error").textContent = `Demasiados códigos equivocados. Esperá ${p[1]} segundos y probá de nuevo.`;
+        $("error").textContent = tr("Demasiados códigos equivocados. Esperá {n} segundos y probá de nuevo.", p[1]);
         pedirCodigo();
       } else if (p[0] === "lc") {
         mostrarOtrosCelulares(e.data.slice(3));
       } else if (p[0] === "cc") {
         aplicarCopia(e.data.slice(3));
       } else if (p[0] === "lleno") {
-        $("error").textContent = "Ya hay 4 celulares conectados a esta PC.";
+        $("error").textContent = tr("Ya hay 4 celulares conectados a esta PC.");
         pedirCodigo();
       } else if (p[0] === "m") {
         // La PC confirma qué control es (Xbox o DualShock 4): cambian los nombres de los botones.
@@ -878,7 +882,7 @@
     soltarTodo(true);
     $("menu").classList.remove("ver");
     $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego; $("optNoche").checked = opt.noche;
-    $("optZurdo").checked = opt.zurdo; $("optMando").value = opt.mando;
+    $("optZurdo").checked = opt.zurdo; $("optMando").value = opt.mando; $("optIdioma").value = leer("idioma", "auto");
     $("optGiro").value = opt.giro; $("optSens").value = opt.sens; $("valSens").textContent = opt.sens;
     $("optInvX").checked = opt.invX; $("optInvY").checked = opt.invY;
     mostrarSticks();
@@ -896,6 +900,7 @@
   casilla("optToque", "toque"); casilla("optJuego", "juego"); casilla("optInvX", "invX"); casilla("optInvY", "invY");
   casilla("optNoche", "noche"); $("optNoche").addEventListener("change", aplicarNoche);
   casilla("optZurdo", "zurdo"); $("optZurdo").addEventListener("change", () => dibujarControl(especActual));
+  $("optIdioma").onchange = (e) => { guardar("idioma", e.target.value); setTimeout(() => location.reload(), 150); };
   $("optMando").onchange = (e) => {
     opt.mando = e.target.value; guardar("mando", opt.mando);
     if (listo && ws.readyState === 1) ws.send("m " + opt.mando); // la PC cambia el control virtual
@@ -913,6 +918,7 @@
       `<option value="suave">Suave</option><option value="normal">Normal</option><option value="rapida">Rápida</option></select></label>` +
       `<label class="fila"><span class="txt"><b>Recorrido</b></span><span class="ctrl">` +
       `<input type="range" min="50" max="100" step="5" data-st="alc${k}"><span class="valor" data-v="alc${k}"></span></span></label>`);
+    traducirDOM(col);
   });
   function mostrarSticks() {
     document.querySelectorAll("[data-st]").forEach((c) => {
@@ -991,7 +997,7 @@
   // Con DualShock 4, los nombres de Xbox se muestran como los de PlayStation.
   const NOMBRES_DS4 = { A: "✕", B: "○", X: "□", Y: "△", LB: "L1", RB: "R1", LT: "L2", RT: "R2",
                         Select: "Share", Start: "Options", "●": "PS" };
-  const nombreBoton = (t) => (opt.mando === "ds4" && NOMBRES_DS4[t]) || t;
+  const nombreBoton = (t) => (opt.mando === "ds4" && NOMBRES_DS4[t]) || tr(t);
 
   function dibujarControl(espec) {
     // Modo zurdo (no en el editor): todo pasa al otro lado como un espejo, pero los grupos de botones
@@ -1045,8 +1051,8 @@
     });
     const b = espec.barra || { x: 50, y: 9 };
     const barra = nuevo("barra3" + (b.v ? " v" : ""), b);
-    barra.innerHTML = '<div class="punto"></div><span class="estadoCon"></span>' +
-                      '<div class="tecla ajBtn" title="Opciones">⚙</div><div class="tecla menuBtn" title="Menú">☰</div>';
+    barra.innerHTML = `<div class="punto"></div><span class="estadoCon"></span>` +
+                      `<div class="tecla ajBtn" title="${tr("Opciones")}">⚙</div><div class="tecla menuBtn" title="${tr("Menú")}">☰</div>`;
     if (opt.modelo === "juego" && juegoElegido) {
       const n = nuevo("nombreJuego", { x: 50, y: 20 }); n.textContent = juegoElegido.nombre;
     }
@@ -1061,8 +1067,8 @@
     $("tipoNombre").textContent = j.nombre;
     const sel = $("optTipo"); sel.textContent = "";
     const opcion = (v, txt) => { const o = document.createElement("option"); o.value = v; o.textContent = txt; sel.appendChild(o); };
-    if (PERFILES[j.id]) opcion("perfil", PERFILES[j.id].nombre);
-    for (const t of TIPOS) opcion(t, PLANTILLAS[t].nombre + (t === j.tipo ? " (sugerido)" : ""));
+    if (PERFILES[j.id]) opcion("perfil", tr(PERFILES[j.id].nombre));
+    for (const t of TIPOS) opcion(t, tr(PLANTILLAS[t].nombre) + (t === j.tipo ? " " + tr("(sugerido)") : ""));
     sel.value = PERFILES[j.id] && (leer("tipo_" + j.id, "perfil") === "perfil") ? "perfil" : (leer("tipo_" + j.id, null) || j.tipo);
     if (mostrar) ponerModelo("juego");
   }
@@ -1091,11 +1097,11 @@
     const cont = $("edColores");
     for (const [v, css, nombre] of COLORES) {
       const b = document.createElement("button");
-      b.className = "sw"; b.dataset.color = v; b.title = nombre; b.style.background = css;
+      b.className = "sw"; b.dataset.color = v; b.title = tr(nombre); b.style.background = css;
       cont.appendChild(b);
     }
     const sel = $("edFuncion");
-    for (const [v, txt] of FUNCIONES) { const o = document.createElement("option"); o.value = v; o.textContent = txt; sel.appendChild(o); }
+    for (const [v, txt] of FUNCIONES) { const o = document.createElement("option"); o.value = v; o.textContent = tr(txt); sel.appendChild(o); }
   })();
 
   // Deshacer: antes de cada cambio se guarda una copia (hasta 40).
@@ -1280,13 +1286,13 @@
     $("lista").classList.add("ver");
     $("optAuto").checked = opt.auto;
     const grid = $("juegosGrid"), estado = $("estadoLista");
-    grid.textContent = ""; estado.textContent = "Cargando tus juegos…";
+    grid.textContent = ""; estado.textContent = tr("Cargando tus juegos…");
     try {
       const r = await fetch(`/juegos?t=${encodeURIComponent(token || "")}`, { cache: "no-store" });
       if (!r.ok) throw new Error();
       const datos = await r.json();
       const lista = datos.juegos.sort((a, b) => (b.id === datos.abierto) - (a.id === datos.abierto));
-      estado.textContent = lista.length ? "" : "No encontré juegos de Steam instalados en la PC.";
+      estado.textContent = lista.length ? "" : tr("No encontré juegos de Steam instalados en la PC.");
       for (const j of lista) {
         const b = document.createElement("button");
         b.className = "juego" + (j.id === datos.abierto ? " abierto" : "");
@@ -1296,17 +1302,17 @@
         img.onerror = () => { img.replaceWith(Object.assign(document.createElement("div"), { className: "sinFoto" })); };
         const n = document.createElement("div"); n.className = "n"; n.textContent = j.nombre;
         const t = document.createElement("div"); t.className = "t";
-        t.textContent = PERFILES[j.id] ? PERFILES[j.id].nombre : (PLANTILLAS[j.tipo] || PLANTILLAS.accion).nombre;
+        t.textContent = tr(PERFILES[j.id] ? PERFILES[j.id].nombre : (PLANTILLAS[j.tipo] || PLANTILLAS.accion).nombre);
         b.append(img, n, t);
         if (j.id === datos.abierto) {
-          const badge = document.createElement("span"); badge.className = "badge"; badge.textContent = "Abierto ahora";
+          const badge = document.createElement("span"); badge.className = "badge"; badge.textContent = tr("Abierto ahora");
           b.appendChild(badge);
         }
         b.onclick = () => { ponerJuego(j); $("lista").classList.remove("ver"); };
         grid.appendChild(b);
       }
     } catch (e) {
-      estado.textContent = "No pude traer la lista. ¿Está conectado el control (puntito verde)?";
+      estado.textContent = tr("No pude traer la lista. ¿Está conectado el control (puntito verde)?");
     }
   }
   $("listaCerrar").onclick = () => $("lista").classList.remove("ver");
@@ -1322,10 +1328,10 @@
   let tutPaso = 0;
   function mostrarPaso() {
     const pasos = TUTORIAL;
-    const [icono, titulo, texto] = pasos[tutPaso];
+    const [icono, titulo, texto] = pasos[tutPaso].map((t) => tr(t));
     $("tutIcono").textContent = icono; $("tutTitulo").textContent = titulo; $("tutTexto").textContent = texto;
     $("tutPuntos").innerHTML = pasos.map((_, i) => `<span class="${i === tutPaso ? "si" : ""}"></span>`).join("");
-    $("tutSiguiente").textContent = tutPaso === pasos.length - 1 ? "¡A jugar!" : "Siguiente";
+    $("tutSiguiente").textContent = tr(tutPaso === pasos.length - 1 ? "¡A jugar!" : "Siguiente");
     $("tutSaltar").hidden = tutPaso === pasos.length - 1;
     return pasos.length;
   }
@@ -1347,7 +1353,7 @@
   $("copiarAjustes").onclick = () => {
     $("menu").classList.remove("ver");
     $("copiarLista").textContent = "";
-    $("copiarEstado").textContent = listo ? "Buscando…" : "Primero conectate a la PC (puntito verde).";
+    $("copiarEstado").textContent = tr(listo ? "Buscando…" : "Primero conectate a la PC (puntito verde).");
     $("copiar").classList.add("ver");
     if (listo && ws.readyState === 1) ws.send("l");
   };

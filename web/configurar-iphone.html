@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#eceef1">
+<title>Configurar Control Celular (iPhone)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 40px; background: #eceef1; color: #3d444d;
+         font: 17px/1.5 system-ui, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .caja { background: #fbfbfc; border: 1px solid #dfe2e6; border-radius: 18px; padding: 16px 18px; margin: 14px 0; }
+  .n { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; background: #3a72c4; color: #fff;
+       align-items: center; justify-content: center; font-weight: 700; margin-right: 8px; }
+  a.boton, button { display: block; width: 100%; text-align: center; padding: 14px; margin-top: 12px;
+       border-radius: 14px; border: 0; background: #3a72c4; color: #fff; font: 600 18px system-ui, sans-serif;
+       text-decoration: none; }
+  a.sec { background: #e4e7eb; color: #3d444d; }
+  ol { padding-left: 22px; margin: 8px 0 0; } li { margin: 4px 0; }
+  #estado { font-weight: 700; }
+  #estado.ok { color: #3c9a5f; } #estado.no { color: #b8792a; }
+  small { color: #6b737d; }
+  .marcas { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+  .marcas button { width: auto; margin: 0; padding: 9px 14px; font-size: 15px; background: #e4e7eb; color: #3d444d; }
+  .marcas button.si { background: #3a72c4; color: #fff; }
+  .guia { display: none; } .guia.si { display: block; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Control Celular <small style="font-size:15px">· iPhone</small></h1>
+  <div data-en="This is done <b>only once</b>. It's needed to install the controller as an app and to use the gyro.">Esto se hace <b>una sola vez</b>. Hace falta para que el control se pueda instalar como app y para usar el giroscopio.</div>
+
+  <div class="caja"><span data-en="Certificate:">Certificado:</span> <span id="estado">…</span></div>
+
+  <div class="caja">
+    <span class="n">1</span><b data-en="Download the certificate">Descargá el certificado</b>
+    <a class="boton" href="/ca.crt" download="control-celular-ca.crt" data-en="Download certificate">Descargar certificado</a>
+  </div>
+
+  <div class="caja">
+    <span class="n">2</span><b data-en="Install it in Settings">Instalalo en Ajustes</b>
+    <ol>
+      <li data-en="Use <b>Safari</b> (in other browsers the iPhone doesn't install certificates). Tapping <b>Download certificate</b> shows <b>“This website is trying to download a configuration profile”</b>: tap <b>Allow</b>.">Usá <b>Safari</b> (en otros navegadores el iPhone no instala certificados). Al tocar <b>Descargar certificado</b> aparece <b>«Este sitio web intenta descargar un perfil de configuración»</b>: tocá <b>Permitir</b>.</li>
+      <li data-en="Open <b>Settings</b>: at the top you'll see <b>Profile Downloaded</b> (or go to <b>General</b> → <b>VPN &amp; Device Management</b>). Tap <b>CONTROL CELULAR</b> → <b>Install</b>, enter your passcode and tap <b>Install</b> again.">Abrí <b>Ajustes</b>: arriba aparece <b>Perfil descargado</b> (o entrá a <b>General</b> → <b>VPN y gestión de dispositivos</b>). Tocá <b>CONTROL CELULAR</b> → <b>Instalar</b>, poné tu código y tocá <b>Instalar</b> otra vez.</li>
+      <li data-en="<b>Turn on trust</b> (iPhone asks for this extra step): <b>Settings</b> → <b>General</b> → <b>About</b> → at the bottom, <b>Certificate Trust Settings</b> → turn on <b>CONTROL CELULAR (solo red local)</b>."><b>Activá la confianza</b> (el iPhone pide este paso extra): <b>Ajustes</b> → <b>General</b> → <b>Información</b> → abajo de todo, <b>Configuración de confianza de certificados</b> → activá <b>CONTROL CELULAR (solo red local)</b>.</li>
+    </ol>
+    <small data-en="The certificate only works for addresses on your home network, not for websites. You can remove it whenever you want from Settings → General → VPN &amp; Device Management.">El certificado solo sirve para direcciones de tu red de casa, no para sitios de internet. Lo podés sacar cuando quieras desde Ajustes → General → VPN y gestión de dispositivos.</small>
+  </div>
+
+  <div class="caja">
+    <span class="n">3</span><b data-en="Come back here">Volvé acá</b>
+    <div data-en="Once the certificate is trusted, this page notices it and takes you to the controller. To install it as an app: in Safari tap <b>Share</b> → <b>Add to Home Screen</b>.">Cuando el certificado tenga la confianza activada, esta página lo detecta sola y te lleva al control.
+      Para instalarlo como app: en Safari tocá <b>Compartir</b> → <b>Agregar a inicio</b>.</div>
+    <a class="boton sec" id="ir" href="#" data-en="Go to the controller">Ir al control</a>
+  </div>
+
+  <div class="caja"><small data-en="Don't want to install anything? You can still use the <a id=&quot;sinApp&quot; href=&quot;/iphone.html&quot;>controller without app or gyro</a>.">¿No querés instalar nada? Podés usar el
+    <a id="sinApp" href="/iphone.html">control sin app ni giroscopio</a> igual.</small></div>
+</main>
+<script>
+  // Inglés si el celular está en inglés: cada texto tiene su versión en data-en.
+  const EN = !(navigator.language || "es").toLowerCase().startsWith("es");
+  if (EN) {
+    document.documentElement.lang = "en";
+    document.title = "Set up Control Celular (iPhone)";
+    document.querySelectorAll("[data-en]").forEach((el) => { el.innerHTML = el.dataset.en; });
+  }
+  const T = (es, en) => (EN ? en : es);
+  // Si vino del QR, el código de emparejamiento pasa al control para que se conecte solo.
+  const c = new URLSearchParams(location.search).get("c");
+  const base = `https://${location.hostname}:8443/`;
+  const seguro = base + (c && /^\d{4}$/.test(c) ? `?c=${c}` : "");
+  document.getElementById("sinApp").href = "/iphone.html" + (c ? `?c=${encodeURIComponent(c)}` : "");
+
+
+  document.getElementById("ir").href = seguro;
+  const estado = document.getElementById("estado");
+  let yaFue = false;
+  async function revisar() {
+    try {
+      await fetch(base + "ping", { mode: "no-cors", cache: "no-store" });
+      estado.textContent = T("instalado ✓", "installed ✓"); estado.className = "ok";
+      if (!yaFue) { yaFue = true; setTimeout(() => location.href = seguro, 800); }
+    } catch (e) {
+      estado.textContent = T("todavía no está instalado", "not installed yet"); estado.className = "no";
+      setTimeout(revisar, 3000);
+    }
+  }
+  revisar();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !yaFue) revisar(); });
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@ Leer no necesita permisos. Para cambiar algo, Windows pide permiso de administra
 import subprocess
 import tempfile
 from pathlib import Path
+from idioma import T
 
 REGLA = "CONTROL CELULAR"
 PUERTOS = "8765,8443"
@@ -64,7 +65,7 @@ def hacer_privadas() -> bool:
 
 def _preguntar(texto: str) -> bool:
     try:
-        return input(texto).strip().lower() in ("s", "si", "sí", "y")
+        return input(texto).strip().lower() in ("s", "si", "sí", "y", "yes")
     except (EOFError, OSError):  # sin consola para responder: no tocar nada
         return False
 
@@ -73,20 +74,20 @@ def revisar(preguntar: bool = True) -> None:
     """Se llama al arrancar. Si todo está bien, no dice nada. Con preguntar=False solo avisa (arranque oculto)."""
     try:
         if not regla_existe():
-            print("  Para que el celular se pueda conectar hay que abrir el firewall de Windows")
-            print("  (solo los puertos del control, solo en redes privadas y solo para tu red de casa).")
-            if preguntar and _preguntar("  ¿Lo abro ahora? Windows te va a pedir permiso (S/N): "):
-                print("  " + ("Listo: firewall abierto." if crear_regla() else
-                              "No se pudo (¿tocaste «No» en el permiso?). Podés volver a abrir el programa."))
+            print(T("  Para que el celular se pueda conectar hay que abrir el firewall de Windows", "  For your phone to connect, the Windows firewall needs to be opened"))
+            print(T("  (solo los puertos del control, solo en redes privadas y solo para tu red de casa).", "  (only the controller's ports, only on private networks and only for your home network)."))
+            if preguntar and _preguntar(T("  ¿Lo abro ahora? Windows te va a pedir permiso (S/N): ", "  Open it now? Windows will ask for permission (Y/N): ")):
+                print("  " + (T("Listo: firewall abierto.", "Done: firewall opened.") if crear_regla() else
+                              T("No se pudo (¿tocaste «No» en el permiso?). Podés volver a abrir el programa.", "It didn't work (did you tap “No”?). You can open the program again.")))
             print()
         publicas = redes_publicas()
         if publicas:
-            print("  Tu red está marcada como PÚBLICA, así el celular no se puede conectar:")
+            print(T("  Tu red está marcada como PÚBLICA, así el celular no se puede conectar:", "  Your network is marked as PUBLIC, so your phone can't connect:"))
             for r in publicas:
                 print("    -", r)
-            if preguntar and _preguntar("  ¿Es la red de tu casa? ¿La marco como PRIVADA? (S/N): "):
-                print("  " + ("Listo: red marcada como privada." if hacer_privadas() else
-                              "No se pudo cambiar. Hacelo en Configuración > Red e Internet > tu red > Privada."))
+            if preguntar and _preguntar(T("  ¿Es la red de tu casa? ¿La marco como PRIVADA? (S/N): ", "  Is it your home network? Mark it as PRIVATE? (Y/N): ")):
+                print("  " + (T("Listo: red marcada como privada.", "Done: network marked as private.") if hacer_privadas() else
+                              T("No se pudo cambiar. Hacelo en Configuración > Red e Internet > tu red > Privada.", "It couldn't be changed. Do it in Settings > Network & Internet > your network > Private.")))
             print()
     except Exception as e:  # nunca impedir que arranque el control por esto
-        print("  (No pude revisar el firewall:", e, ")")
+        print(T("  (No pude revisar el firewall:", "  (I couldn't check the firewall:"), e, ")")

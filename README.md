@@ -1,6 +1,8 @@
 # Control Celular
 
-Usá tu celular Android como **control de juegos para la PC**. Windows, Steam y los emuladores lo reconocen como un
+*[Read in English](README.en.md)*
+
+Usá tu celular Android o tu iPhone como **control de juegos para la PC**. Windows, Steam y los emuladores lo reconocen como un
 **control de Xbox 360 de verdad**, enchufado por USB.
 
 - Funciona por el **WiFi de tu casa**, con poca demora y sin internet.
@@ -9,8 +11,9 @@ Usá tu celular Android como **control de juegos para la PC**. Windows, Steam y 
   - **completo** (estilo Xbox);
   - **alargado** (de una mano, acostado);
   - **por juego**: lee tu biblioteca de Steam y arma un control según el tipo de juego.
-- Tiene **giroscopio** (volante y apuntar), **vibración** y un **editor** para mover, agrandar, pintar y cambiar
-  cualquier botón.
+- Tiene **giroscopio** (volante, apuntar y movimiento real de DualShock 4), **vibración** (Android), **hasta 4
+  jugadores** y un **editor** para mover, agrandar, pintar y cambiar cualquier botón.
+- Está en **español e inglés**: sigue el idioma del celular y el de Windows.
 
 ---
 
@@ -19,7 +22,7 @@ Usá tu celular Android como **control de juegos para la PC**. Windows, Steam y 
 | | |
 |---|---|
 | **PC** | Windows 10 u 11 |
-| **Celular** | Android con Chrome |
+| **Celular** | Android con Chrome, o iPhone con Safari |
 | **Red** | La PC y el celular conectados a la **misma red** (el WiFi de tu casa, o el hotspot del celular) |
 | **Driver** | **ViGEmBus** (gratis): es lo que crea el control de Xbox virtual. Si no lo tenés, el programa te avisa y te abre la página para descargarlo. |
 
@@ -78,12 +81,15 @@ Al pasar el mouse por el ícono, te dice qué jugadores están conectados.
 ### En el celular (la primera vez)
 
 1. **Escaneá el QR** con la cámara del celular, o abrí en Chrome la dirección `http://…:8765` que muestra la PC.
-2. Seguí los pasos de esa página para instalar el **certificado**, necesario para la app y el giroscopio. La página
-   reconoce la marca de tu celular (Samsung, Xiaomi, Motorola…) y te muestra el camino exacto en Ajustes. Cuando
-   lo instalás, lo detecta sola y te lleva al control.
+2. Seguí los pasos de esa página para instalar el **certificado**, necesario para la app y el giroscopio. Cuando
+   lo instalás, la página lo detecta sola y te lleva al control. Cada celular tiene sus pasos:
+   - **Android:** la página reconoce la marca (Samsung, Xiaomi, Motorola…) y te muestra el camino exacto en Ajustes.
+   - **iPhone:** usá **Safari**. El certificado se instala como un **perfil** y después hay que **activar la
+     confianza** en Ajustes → General → Información → Configuración de confianza de certificados.
 3. Si llegaste por el QR, **se empareja solo**. Si no, escribí el código de emparejamiento que muestra la PC.
-4. Aparece un **tutorial corto**. Después, en el menú **☰** tocá **Instalar app**. Si no aparece, usá el menú de
-   Chrome → **Instalar app**.
+4. Aparece un **tutorial corto**. Después instalala como app:
+   - **Android:** en el menú **☰** tocá **Instalar app**. Si no aparece, usá el menú de Chrome → **Instalar app**.
+   - **iPhone:** en Safari tocá **Compartir** → **Agregar a inicio**.
 
 Después de la primera vez, abrís la app y se conecta sola. Arriba se ve un puntito **verde** cuando está conectada,
 tu **número de jugador** (J1, J2…) y la **demora** en milisegundos. Si la demora pasa de 80 ms, se pone en naranja:
@@ -91,6 +97,17 @@ el WiFi anda lento.
 
 > **¿No querés instalar el certificado?** Podés usar el control igual, desde la dirección `http://...:8765`, tocando
 > «control sin app ni giroscopio». Sin el certificado no hay app instalada ni giroscopio.
+
+### Lo distinto en iPhone
+
+El iPhone tiene su propia versión de la página del control, en archivos aparte, así nunca se mezcla con la de Android:
+
+- **No vibra:** Safari no deja que una página web vibre.
+- **Giroscopio:** el iPhone pide permiso. Tocá **Permitir** en ⚙ Opciones → Giroscopio.
+- **Instalar:** con **Agregar a inicio**. No hay botón de pantalla completa, porque la app instalada ya se abre así.
+
+> La versión de iPhone está hecha siguiendo cómo funciona Safari, pero **todavía no se probó en un iPhone de
+> verdad**. Si algo no anda, avisá.
 
 ### Varios jugadores
 
@@ -203,7 +220,9 @@ Todo se guarda para cada celular, también en la PC.
 | `rutas.py` | Dónde están los archivos, tanto en Python como en el `.exe` |
 | `certs.py` | Crea el certificado propio para HTTPS en la red local |
 | `steam.py` | Lee la biblioteca de Steam de la PC (juegos, tipo, portadas, juego abierto) |
-| `web/index.html` | El control del celular (HTML, CSS y JavaScript puro, sin librerías) |
+| `web/index.html` | El control del celular para Android (HTML, CSS y JavaScript puro, sin librerías) |
+| `web/iphone.html`, `web/configurar-iphone.html` | La versión de iPhone (archivos aparte) |
+| `web/i18n.js`, `idioma.py` | El inglés: en la página del control y en la PC |
 | `web/plantillas.js` | Los controles: completo, alargado, uno por tipo de juego y perfiles propios por juego |
 | `web/configurar.html` | La página de la primera vez (instalar el certificado) |
 | `iniciar.bat`, `instalar.bat` | Arrancar con Python (la primera vez instala solo) |

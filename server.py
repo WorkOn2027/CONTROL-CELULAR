@@ -32,6 +32,7 @@ Protocolo (texto, mensajes cortos):
 import asyncio
 import json
 import mimetypes
+import re
 import secrets
 import socket
 import ssl
@@ -48,6 +49,7 @@ import certs
 import red
 import rutas
 import steam
+from idioma import T
 
 PUERTO = 8765          # HTTP: página para instalar el certificado
 PUERTO_SEGURO = 8443   # HTTPS: el control
@@ -63,7 +65,7 @@ def salir(codigo_salida: int = 0) -> None:
     """En el .exe la ventana se cerraría sola y no se leería el mensaje: esperar un Enter."""
     if rutas.EMPAQUETADO and not MINIMIZADO:
         try:
-            input("  Presioná Enter para cerrar...")
+            input(T("  Presioná Enter para cerrar...", "  Press Enter to close..."))
         except (EOFError, OSError):
             pass
     raise SystemExit(codigo_salida)
@@ -172,7 +174,7 @@ def anotar_fallo(ip: str) -> None:
         f[0], f[2] = 0, f[2] + 1
         espera = min(BLOQUEO_MAX, BLOQUEO_BASE * 2 ** (f[2] - 1))
         f[1] = time.time() + espera
-        print(f"  {INTENTOS} códigos equivocados desde {ip}: bloqueado {espera} segundos.")
+        print(T(f"  {INTENTOS} códigos equivocados desde {ip}: bloqueado {espera} segundos.", f"  {INTENTOS} wrong codes from {ip}: blocked for {espera} seconds."))
     ahora = time.time()
     fallos_recientes.append(ahora)
     while fallos_recientes and ahora - fallos_recientes[0] > 600:
@@ -181,8 +183,8 @@ def anotar_fallo(ip: str) -> None:
         fallos_recientes.clear()
         codigo = f"{secrets.randbelow(10000):04d}"
         direccion["qr"] = f"http://{direccion['ip']}:{PUERTO}/?c={codigo}"
-        print(f"  Demasiados intentos fallidos: cambié el código de emparejamiento. Nuevo código: {codigo}")
-        print("  (el QR del ícono ya tiene el código nuevo)")
+        print(T(f"  Demasiados intentos fallidos: cambié el código de emparejamiento. Nuevo código: {codigo}", f"  Too many failed attempts: I changed the pairing code. New code: {codigo}"))
+        print(T("  (el QR del ícono ya tiene el código nuevo)", "  (the QR in the tray icon already has the new code)"))
 
 
 # ---------- Jugadores (un control virtual por celular) ----------
@@ -295,10 +297,10 @@ def crear_primer_control() -> None:
         jugadores[1] = Jugador(1)
     except Exception as e:  # casi siempre: falta el driver ViGEmBus
         print()
-        print("  No pude crear el control virtual de Xbox:", e)
-        print("  Falta el driver ViGEmBus (es gratis y oficial). Te abro la página para descargarlo:")
+        print(T("  No pude crear el control virtual de Xbox:", "  I couldn't create the virtual Xbox controller:"), e)
+        print(T("  Falta el driver ViGEmBus (es gratis y oficial). Te abro la página para descargarlo:", "  The ViGEmBus driver is missing (it's free and official). Opening its download page:"))
         print(f"    {DESCARGA_VIGEMBUS}")
-        print("  Bajá el archivo ViGEmBus_..._x64_x86_arm64.exe, instalalo y volvé a abrir Control Celular.")
+        print(T("  Bajá el archivo ViGEmBus_..._x64_x86_arm64.exe, instalalo y volvé a abrir Control Celular.", "  Download ViGEmBus_..._x64_x86_arm64.exe, install it and open Control Celular again."))
         print()
         try:
             import webbrowser
@@ -403,7 +405,7 @@ async def atender(ws):
         if clave != codigo:
             anotar_fallo(ip)
             await ws.send("no")
-            print("  Intento con código incorrecto desde", ip)
+            print(T("  Intento con código incorrecto desde", "  Wrong code attempt from"), ip)
             return
         fallos.pop(ip, None)
         token = secrets.token_urlsafe(16)
@@ -414,7 +416,7 @@ async def atender(ws):
     j = lugar_para(token)
     if j is None:
         await ws.send("lleno")
-        print(f"  Ya hay {MAX_JUGADORES} celulares conectados; no entra otro.")
+        print(T(f"  Ya hay {MAX_JUGADORES} celulares conectados; no entra otro.", f"  {MAX_JUGADORES} phones are already connected; no room for another."))
         return
     if j.ws is not None:  # el mismo celular se reconectó: cerrar la conexión vieja
         viejo, j.ws = j.ws, None
@@ -426,7 +428,7 @@ async def atender(ws):
     await ws.send(f"m {j.tipo}")
     await ws.send("c " + json.dumps(ajustes_de(token), ensure_ascii=False))
     await ws.send(mensaje_abierto())
-    print(f"  Jugador {j.numero} conectado ({celulares[token]['nombre']}):", ip)
+    print(T(f"  Jugador {j.numero} conectado ({celulares[token]['nombre']}):", f"  Player {j.numero} connected ({celulares[token]['nombre']}):"), ip)
     avisar_conexiones()
     try:
         async for msg in ws:
@@ -450,7 +452,7 @@ async def atender(ws):
                         celulares[token]["mando"] = nuevo
                         guardar_celulares()
                         nombre_mando = "DualShock 4" if nuevo == "ds4" else "Xbox 360"
-                        print(f"  Jugador {j.numero} ahora es un control {nombre_mando}")
+                        print(T(f"  Jugador {j.numero} ahora es un control {nombre_mando}", f"  Player {j.numero} is now a {nombre_mando} controller"))
                     await ws.send(f"m {j.tipo}")
                 elif msg == "l":
                     await ws.send("lc " + json.dumps(otros_celulares(token), ensure_ascii=False))
@@ -467,7 +469,7 @@ async def atender(ws):
         if j.ws is ws:
             j.ws = None
             j.soltar()
-            print(f"  Jugador {j.numero} desconectado (se soltaron todos sus botones)")
+            print(T(f"  Jugador {j.numero} desconectado (se soltaron todos sus botones)", f"  Player {j.numero} disconnected (all its buttons were released)"))
             avisar_conexiones()
 
 
@@ -492,7 +494,7 @@ async def _olvidar(ids: set[str] | None) -> None:
                     await j.ws.close()
     guardar_celulares()
     guardar_ajustes()
-    print(f"  Olvidé {len(objetivo)} celular(es). Para volver a usarlos hay que emparejarlos de nuevo (QR).")
+    print(T(f"  Olvidé {len(objetivo)} celular(es). Para volver a usarlos hay que emparejarlos de nuevo (QR).", f"  Forgot {len(objetivo)} phone(s). To use them again, pair them again (QR)."))
     avisar_conexiones()
 
 
@@ -513,7 +515,7 @@ def biblioteca() -> list[dict]:
         try:
             _biblio["lista"] = steam.juegos()
         except Exception as e:  # nunca tirar abajo el servidor por esto
-            print("  No pude leer la biblioteca de Steam:", e)
+            print(T("  No pude leer la biblioteca de Steam:", "  I couldn't read the Steam library:"), e)
         _biblio["hora"] = time.time()
     return _biblio["lista"]
 
@@ -551,16 +553,16 @@ def qr_svg() -> bytes:
 def pagina_qr() -> bytes:
     svg = qr_svg().decode("utf-8")
     svg = svg[svg.index("<svg"):]
-    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Conectar el celular</title>
+    return f"""<!doctype html><html lang="{T("es", "en")}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{T("Conectar el celular", "Connect your phone")}</title>
 <style>body{{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
 gap:14px;background:#eceef1;color:#3d444d;font:17px/1.4 system-ui,sans-serif;text-align:center;padding:16px}}
 .caja{{background:#fff;border-radius:20px;padding:18px;box-shadow:0 0 0 1px #dfe2e6}} svg{{width:min(70vw,340px);height:auto}}
 code{{font-size:15px;background:#fff;padding:4px 8px;border-radius:8px}} b{{font-size:28px;letter-spacing:4px}}</style></head>
-<body><h1 style="margin:0;font-size:24px">Escaneá con la cámara del celular</h1>
+<body><h1 style="margin:0;font-size:24px">{T("Escaneá con la cámara del celular", "Scan with your phone's camera")}</h1>
 <div class="caja">{svg}</div>
-<div>O abrí en Chrome: <code>{direccion["qr"].split("?")[0]}</code> y poné el código <b>{codigo}</b></div>
-<div style="opacity:.7;font-size:14px">El celular tiene que estar en el mismo WiFi que esta PC.</div></body></html>""".encode()
+<div>{T("O abrí en el navegador:", "Or open in your browser:")} <code>{direccion["qr"].split("?")[0]}</code> {T("y poné el código", "and enter the code")} <b>{codigo}</b></div>
+<div style="opacity:.7;font-size:14px">{T("El celular tiene que estar en el mismo WiFi que esta PC.", "Your phone must be on the same WiFi as this PC.")}</div></body></html>""".encode()
 
 
 def mostrar_qr_en_consola() -> None:
@@ -617,7 +619,12 @@ def servir_archivos(seguro: bool):
         if ruta == "/ping":
             return respuesta(b"ok", "text/plain", [("Access-Control-Allow-Origin", "*")])
         if ruta == "/":
-            ruta = "/index.html" if seguro else "/configurar.html"
+            # El iPhone tiene su propia versión de las páginas (archivos aparte, para que no se mezclen).
+            ios = bool(re.search(r"iPhone|iPad|iPod", request.headers.get("User-Agent", "")))
+            if seguro:
+                ruta = "/iphone.html" if ios else "/index.html"
+            else:
+                ruta = "/configurar-iphone.html" if ios else "/configurar.html"
         archivo = (WEB / ruta.lstrip("/")).resolve()
         if WEB.resolve() not in archivo.parents or not archivo.is_file():
             return connection.respond(404, "No encontrado\n")
@@ -642,15 +649,15 @@ async def main():
             serve(atender, "0.0.0.0", PUERTO_SEGURO, process_request=servir_archivos(True), ssl=tls,
                   **opciones) as seguro:
         print()
-        print("  CONTROL CELULAR listo. Escaneá este QR con la cámara del celular:")
+        print(T("  CONTROL CELULAR listo. Escaneá este QR con la cámara del celular:", "  CONTROL CELULAR is ready. Scan this QR code with your phone's camera:"))
         print()
         mostrar_qr_en_consola()
         print()
-        print(f"  O abrí en Chrome:  http://{ip}:{PUERTO}   y poné el código  {codigo}")
-        print(f"  (con el certificado ya instalado, la app es:  https://{ip}:{PUERTO_SEGURO})")
-        print("  El celular tiene que estar en la misma red WiFi que esta PC. Hasta 4 celulares a la vez.")
-        print("  ¿No conecta? Cerrá y volvé a abrir: te ofrezco abrir el firewall y marcar la red como privada.")
-        print("  El ícono del control, al lado del reloj, tiene el QR y más opciones.")
+        print(T(f"  O abrí en Chrome:  http://{ip}:{PUERTO}   y poné el código  {codigo}", f"  Or open in your browser:  http://{ip}:{PUERTO}   and enter the code  {codigo}"))
+        print(T(f"  (con el certificado ya instalado, la app es:  https://{ip}:{PUERTO_SEGURO})", f"  (with the certificate installed, the app is at:  https://{ip}:{PUERTO_SEGURO})"))
+        print(T("  El celular tiene que estar en la misma red WiFi que esta PC. Hasta 4 celulares a la vez.", "  Your phone must be on the same WiFi network as this PC. Up to 4 phones at once."))
+        print(T("  ¿No conecta? Cerrá y volvé a abrir: te ofrezco abrir el firewall y marcar la red como privada.", "  Can't connect? Close and reopen it: I'll offer to open the firewall and mark the network as private."))
+        print(T("  El ícono del control, al lado del reloj, tiene el QR y más opciones.", "  The controller icon next to the clock has the QR code and more options."))
         print()
         try:
             import bandeja
@@ -658,9 +665,9 @@ async def main():
             al_cambiar_conexiones = bandeja.iniciar(f"http://127.0.0.1:{PUERTO}/qr", soltar_todo_y_salir,
                                                      MINIMIZADO, lista_para_bandeja, olvidar_desde_bandeja)
         except Exception as e:
-            print("  (No pude poner el ícono en la barra de tareas:", e, ")")
+            print(T("  (No pude poner el ícono en la barra de tareas:", "  (I couldn't add the tray icon:"), e, ")")
         await asyncio.to_thread(biblioteca)
-        print(f"  Biblioteca de Steam: {len(biblioteca())} juegos")
+        print(T(f"  Biblioteca de Steam: {len(biblioteca())} juegos", f"  Steam library: {len(biblioteca())} games"))
         asyncio.ensure_future(vigilar_juego())
         await seguro.serve_forever()
 
@@ -697,11 +704,11 @@ if __name__ == "__main__":
         pass
     except OSError as e:
         print()
-        print("  No pude arrancar:", e)
+        print(T("  No pude arrancar:", "  I couldn't start:"), e)
         if getattr(e, "winerror", None) == 10048:
-            print("  Parece que Control Celular ya está abierto en otra ventana. Cerrala y probá de nuevo.")
+            print(T("  Parece que Control Celular ya está abierto en otra ventana. Cerrala y probá de nuevo.", "  It looks like Control Celular is already open in another window. Close it and try again."))
         salir(1)
     except Exception as e:
         print()
-        print("  Error inesperado:", repr(e))
+        print(T("  Error inesperado:", "  Unexpected error:"), repr(e))
         salir(1)

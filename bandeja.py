@@ -19,6 +19,7 @@ from PIL import Image
 import red
 import rutas
 import version
+from idioma import T
 
 CONFIG = rutas.DATOS / "config.json"
 
@@ -100,10 +101,10 @@ def cambiar_inicio(activar: bool) -> None:
 
 def _texto(conectados: list[int]) -> str:
     if not conectados:
-        return "Control Celular: esperando un celular"
+        return T("Control Celular: esperando un celular", "Control Celular: waiting for a phone")
     if len(conectados) == 1:
-        return f"Control Celular: jugador {conectados[0]} conectado"
-    return "Control Celular: jugadores " + ", ".join(map(str, conectados)) + " conectados"
+        return T(f"Control Celular: jugador {conectados[0]} conectado", f"Control Celular: player {conectados[0]} connected")
+    return T("Control Celular: jugadores ", "Control Celular: players ") + ", ".join(map(str, conectados)) + T(" conectados", " connected")
 
 
 def confirmar(texto: str) -> bool:
@@ -121,33 +122,44 @@ def avisar_cartel(texto: str) -> None:
 
 def desinstalar(al_salir) -> None:
     """Deja la PC como estaba: saca la regla del firewall, el arranque con Windows y (en el .exe) los datos."""
-    datos = ("tus datos (certificado, celulares emparejados y ajustes guardados)" if rutas.EMPAQUETADO else
-             "nada más: como lo usás con Python, tus datos quedan en la carpeta del proyecto")
-    if not confirmar("¿Desinstalar Control Celular de esta PC?\n\nSe va a sacar:\n"
-                     "  • la regla del firewall (Windows pide permiso)\n"
-                     "  • el arranque con Windows\n"
-                     f"  • {datos}\n\nDespués el programa se cierra."):
+    datos = (T("tus datos (certificado, celulares emparejados y ajustes guardados)",
+                "your data (certificate, paired phones and saved settings)") if rutas.EMPAQUETADO else
+             T("nada más: como lo usás con Python, tus datos quedan en la carpeta del proyecto",
+               "nothing else: since you run it with Python, your data stays in the project folder"))
+    if not confirmar(T("¿Desinstalar Control Celular de esta PC?\n\nSe va a sacar:\n"
+                       "  • la regla del firewall (Windows pide permiso)\n"
+                       "  • el arranque con Windows\n"
+                       f"  • {datos}\n\nDespués el programa se cierra.",
+                       "Uninstall Control Celular from this PC?\n\nThis removes:\n"
+                       "  • the firewall rule (Windows asks for permission)\n"
+                       "  • starting with Windows\n"
+                       f"  • {datos}\n\nThen the program closes.")):
         return
     hechos, fallos = [], []
     if red.regla_existe():
-        (hechos if red.quitar_regla() else fallos).append("la regla del firewall")
+        (hechos if red.quitar_regla() else fallos).append(T("la regla del firewall", "the firewall rule"))
     cambiar_inicio(False)
-    hechos.append("el arranque con Windows")
+    hechos.append(T("el arranque con Windows", "starting with Windows"))
     if rutas.EMPAQUETADO:
         try:
             shutil.rmtree(rutas.DATOS)
-            hechos.append("tus datos")
+            hechos.append(T("tus datos", "your data"))
         except OSError:
-            fallos.append(f"la carpeta {rutas.DATOS}")
-    texto = "Listo. Se sacó: " + ", ".join(hechos) + "."
+            fallos.append(T(f"la carpeta {rutas.DATOS}", f"the folder {rutas.DATOS}"))
+    texto = T("Listo. Se sacó: ", "Done. Removed: ") + ", ".join(hechos) + "."
     if fallos:
-        texto += "\nNo se pudo sacar: " + ", ".join(fallos) + "."
-    texto += ("\n\nPara terminar, si querés:\n"
-              "  • Borrá ControlCelular.exe (o la carpeta del proyecto).\n"
-              "  • ViGEmBus se desinstala desde Configuración > Aplicaciones (\"Nefarius Virtual Gamepad "
-              "Emulation Bus\").\n"
-              "  • En el celular: Ajustes > Seguridad > Credenciales de usuario > borrá \"CONTROL CELULAR\", "
-              "y desinstalá la app.")
+        texto += T("\nNo se pudo sacar: ", "\nCouldn't remove: ") + ", ".join(fallos) + "."
+    texto += T("\n\nPara terminar, si querés:\n"
+               "  • Borrá ControlCelular.exe (o la carpeta del proyecto).\n"
+               "  • ViGEmBus se desinstala desde Configuración > Aplicaciones (\"Nefarius Virtual Gamepad "
+               "Emulation Bus\").\n"
+               "  • En el celular: Ajustes > Seguridad > Credenciales de usuario > borrá \"CONTROL CELULAR\", "
+               "y desinstalá la app.",
+               "\n\nTo finish, if you want:\n"
+               "  • Delete ControlCelular.exe (or the project folder).\n"
+               "  • Uninstall ViGEmBus from Settings > Apps (\"Nefarius Virtual Gamepad Emulation Bus\").\n"
+               "  • On your phone: remove the \"CONTROL CELULAR\" certificate (Android: Settings > Security > User "
+               "credentials; iPhone: Settings > General > VPN & Device Management) and uninstall the app.")
     avisar_cartel(texto)
     al_salir()
 
@@ -155,13 +167,13 @@ def desinstalar(al_salir) -> None:
 def _hace(visto: int) -> str:
     import time
     if not visto:
-        return "sin usar todavía"
+        return T("sin usar todavía", "not used yet")
     s = time.time() - visto
     if s < 3600:
-        return "usado hace un rato"
+        return T("usado hace un rato", "used a moment ago")
     if s < 86400:
-        return f"usado hace {int(s // 3600)} h"
-    return f"usado hace {int(s // 86400)} días"
+        return T(f"usado hace {int(s // 3600)} h", f"used {int(s // 3600)} h ago")
+    return T(f"usado hace {int(s // 86400)} días", f"used {int(s // 86400)} days ago")
 
 
 def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
@@ -170,50 +182,54 @@ def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
 
     def olvidar_uno(c):
         def accion():
-            if confirmar(f"¿Olvidar «{c['nombre']}»?\n\nVa a perder el permiso para conectarse y sus ajustes "
-                         "guardados en la PC. Para volver a usarlo hay que emparejarlo de nuevo con el QR."):
+            if confirmar(T(f"¿Olvidar «{c['nombre']}»?\n\nVa a perder el permiso para conectarse y sus ajustes "
+                           "guardados en la PC. Para volver a usarlo hay que emparejarlo de nuevo con el QR.",
+                           f"Forget “{c['nombre']}”?\n\nIt will lose permission to connect and its settings saved "
+                           "on the PC. To use it again you'll need to pair it again with the QR code.")):
                 olvidar({c["id"]})
         return accion
 
     def olvidar_todos():
-        if confirmar("¿Olvidar TODOS los celulares emparejados?\n\nTodos pierden el permiso para conectarse y sus "
-                     "ajustes guardados en la PC. Para volver a usarlos hay que emparejarlos de nuevo con el QR."):
+        if confirmar(T("¿Olvidar TODOS los celulares emparejados?\n\nTodos pierden el permiso para conectarse y sus "
+                       "ajustes guardados en la PC. Para volver a usarlos hay que emparejarlos de nuevo con el QR.",
+                       "Forget ALL paired phones?\n\nThey all lose permission to connect and their settings saved "
+                       "on the PC. To use them again you'll need to pair them again with the QR code.")):
             olvidar(None)
 
     def items_celulares():
         lista = listar_celulares()
         if not lista:
-            yield pystray.MenuItem("No hay celulares emparejados", None, enabled=False)
+            yield pystray.MenuItem(T("No hay celulares emparejados", "No paired phones"), None, enabled=False)
             return
         for c in lista:
-            estado = "conectado ahora" if c["conectado"] else _hace(c["visto"])
-            yield pystray.MenuItem(f"Olvidar «{c['nombre']}» ({estado})", olvidar_uno(c))
+            estado = T("conectado ahora", "connected now") if c["conectado"] else _hace(c["visto"])
+            yield pystray.MenuItem(T(f"Olvidar «{c['nombre']}» ({estado})", f"Forget “{c['nombre']}” ({estado})"), olvidar_uno(c))
         yield pystray.Menu.SEPARATOR
-        yield pystray.MenuItem("Olvidar todos", olvidar_todos)
+        yield pystray.MenuItem(T("Olvidar todos", "Forget all"), olvidar_todos)
 
     nueva = {"v": None}
 
     def items_version():
         yield pystray.MenuItem(f"Control Celular {version.VERSION}", None, enabled=False)
         if nueva["v"]:
-            yield pystray.MenuItem(f"Descargar la versión {nueva['v']}",
+            yield pystray.MenuItem(T(f"Descargar la versión {nueva['v']}", f"Download version {nueva['v']}"),
                                    lambda: webbrowser.open(version.PAGINA_RELEASES))
-        yield pystray.MenuItem("Buscar versiones nuevas",
+        yield pystray.MenuItem(T("Buscar versiones nuevas", "Check for new versions"),
                                lambda: guardar_config("buscarVersiones", not buscar_versiones_activado()),
                                checked=lambda _: buscar_versiones_activado())
         yield pystray.Menu.SEPARATOR
-        yield pystray.MenuItem("Desinstalar…", lambda: desinstalar(al_salir))
+        yield pystray.MenuItem(T("Desinstalar…", "Uninstall…"), lambda: desinstalar(al_salir))
 
     menu = pystray.Menu(
-        pystray.MenuItem("Mostrar QR para conectar", lambda: webbrowser.open(url_qr), default=True),
-        pystray.MenuItem("Mostrar la ventana", lambda: mostrar_ventana(not ventana_visible()),
+        pystray.MenuItem(T("Mostrar QR para conectar", "Show QR code to connect"), lambda: webbrowser.open(url_qr), default=True),
+        pystray.MenuItem(T("Mostrar la ventana", "Show the window"), lambda: mostrar_ventana(not ventana_visible()),
                          checked=lambda _: ventana_visible()),
-        pystray.MenuItem("Iniciar con Windows", lambda: cambiar_inicio(not inicio_activado()),
+        pystray.MenuItem(T("Iniciar con Windows", "Start with Windows"), lambda: cambiar_inicio(not inicio_activado()),
                          checked=lambda _: inicio_activado()),
-        pystray.MenuItem("Celulares emparejados", pystray.Menu(items_celulares)),
-        pystray.MenuItem("Versión y desinstalar", pystray.Menu(items_version)),
+        pystray.MenuItem(T("Celulares emparejados", "Paired phones"), pystray.Menu(items_celulares)),
+        pystray.MenuItem(T("Versión y desinstalar", "Version and uninstall"), pystray.Menu(items_version)),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Salir", lambda icono: (icono.stop(), al_salir())),
+        pystray.MenuItem(T("Salir", "Exit"), lambda icono: (icono.stop(), al_salir())),
     )
     icono = pystray.Icon("ControlCelular", imagen, _texto([]), menu)
     threading.Thread(target=icono.run, name="bandeja", daemon=True).start()
@@ -233,10 +249,10 @@ def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
         v = version.version_nueva()
         if v:
             nueva["v"] = v
-            print(f"  Hay una versión nueva de Control Celular: {v}. Bajala desde {version.PAGINA_RELEASES}")
+            print(T(f"  Hay una versión nueva de Control Celular: {v}. Bajala desde {version.PAGINA_RELEASES}", f"  A new version of Control Celular is available: {v}. Download it from {version.PAGINA_RELEASES}"))
             try:
                 icono.update_menu()
-                icono.notify(f"Hay una versión nueva: {v}. Abrí el ícono → Versión y desinstalar.", "Control Celular")
+                icono.notify(T(f"Hay una versión nueva: {v}. Abrí el ícono → Versión y desinstalar.", f"New version available: {v}. Open the icon → Version and uninstall."), "Control Celular")
             except Exception:
                 pass
     threading.Thread(target=buscar_version, name="version", daemon=True).start()

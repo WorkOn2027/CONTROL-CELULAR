@@ -1,5 +1,14 @@
 # Novedades
 
+## 1.3.0
+
+- **iPhone:** versión propia de la página del control y de la guía del certificado (archivos aparte de los de
+  Android). La PC elige sola cuál mostrar según el celular, con la misma dirección y el mismo QR. Incluye el permiso
+  del giroscopio, «Agregar a inicio» y los pasos del certificado de iPhone (perfil + confianza total). En iPhone no
+  hay vibración, porque Safari no la permite. *Todavía no se probó en un iPhone de verdad.*
+- **English:** la página del control, la guía del certificado, la ventana del programa, el ícono y un `README.en.md`.
+  Sigue el idioma del celular y el de Windows; en ⚙ Opciones → Idioma se puede elegir a mano.
+
 ## 1.2.0
 
 - **Modo DualShock 4 (control de PlayStation):** en ⚙ Opciones → «La PC lo ve como» elegís Xbox 360 o
