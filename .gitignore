@@ -5,3 +5,5 @@ certs/
 tokens.json
 # Permisos locales de Claude Code en esta PC
 .claude/settings.local.json
+# Notas de trabajo privadas (solo en esta PC)
+CLAUDE.md
