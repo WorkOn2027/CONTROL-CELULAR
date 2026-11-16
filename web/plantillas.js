@@ -39,6 +39,29 @@
   // c = "W" es botón blanco; f = tamaño de letra en vh (opcional).
   window.BASES = {
     completo: { nombre: "Completo (Xbox)", el: completo },
+    // Con la forma de un control de PS4: touchpad grande arriba, sticks juntos abajo. Manda como DualShock 4.
+    ps4: {
+      nombre: "PS4 (DualShock 4)", mando: "ds4",
+      el: [
+        { k: "btn", x: 9, y: 9, w: 30, h: 12, t: "L", txt: "L2" },
+        { k: "btn", x: 24.5, y: 9, w: 30, h: 12, b: "LB", txt: "L1" },
+        { k: "btn", x: 75.5, y: 9, w: 30, h: 12, b: "RB", txt: "R1" },
+        { k: "btn", x: 91, y: 9, w: 30, h: 12, t: "R", txt: "R2" },
+        { k: "btn", x: 50, y: 28, w: 62, h: 20, b: "TOUCH", txt: "Touchpad" },
+        { k: "btn", x: 27, y: 28, w: 13, h: 7, b: "BACK", txt: "Share" },
+        { k: "btn", x: 73, y: 28, w: 13, h: 7, b: "START", txt: "Options" },
+        { k: "dpad", x: 17, y: 50, d: 32 },
+        { k: "btn", x: 50, y: 52, d: 10, b: "GUIDE", txt: "PS" },
+        { k: "btn", x: 83, y: 36, d: 13.5, b: "Y", c: "A", g: "f", f: 7, txt: "△" },
+        { k: "btn", x: 77.4, y: 50, d: 13.5, b: "X", c: "V", g: "f", f: 7, txt: "□" },
+        { k: "btn", x: 88.6, y: 50, d: 13.5, b: "B", c: "B", g: "f", f: 7, txt: "○" },
+        { k: "btn", x: 83, y: 64, d: 13.5, b: "A", c: "X", g: "f", f: 7, txt: "✕" },
+        { k: "stick", s: "L", x: 35, y: 78, d: 30 },
+        { k: "stick", s: "R", x: 65, y: 78, d: 30 },
+        { k: "btn", x: 10, y: 86, d: 8, b: "LS", txt: "L3" },
+        { k: "btn", x: 90, y: 86, d: 8, b: "RS", txt: "R3" },
+      ],
+    },
     alargado: {
       nombre: "Alargado", forma: "alargado", barra: { x: 95.9, y: 50, v: true },
       el: [

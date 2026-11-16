@@ -141,7 +141,8 @@ def _superpuestos_js():
       return { malos, fuera };"""
 
 
-CONTROLES = [("completo", {"modelo": "completo"}), ("alargado", {"modelo": "alargado"})] + [
+CONTROLES = [("completo", {"modelo": "completo"}), ("alargado", {"modelo": "alargado"}),
+             ("ps4", {"modelo": "ps4", "mando": "ds4"})] + [
     (t, {"modelo": "juego", "juegoElegido": json.dumps({"id": 1, "nombre": "Prueba", "tipo": t}), "tipo_1": t})
     for t in ["carreras", "disparos", "plataformas", "deportes", "pelea", "accion"]] + [
     ("perfil Sonic", {"modelo": "juego", "juegoElegido": json.dumps({"id": 2486820, "nombre": "Sonic", "tipo": "carreras"})})]
@@ -200,3 +201,19 @@ def test_iphone_lo_propio():
       return { vibrar: visible('optToque'), permiso: visible('filaPermiso'), inicio: visible('agregarInicio'),
                pantalla: visible('pantalla'), nombre: MSG.find((m) => m.startsWith('d ')) };""", ua=IPHONE_UA)
     assert r == {"vibrar": False, "permiso": True, "inicio": True, "pantalla": False, "nombre": "d iPhone"}
+
+
+@pytest.mark.parametrize("pagina", PAGINAS)
+def test_control_de_ps4(pagina):
+    r = ejecutar(pagina, """
+      document.querySelector('#pad3 .menuBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      document.querySelector('.modelo[data-m=ps4]').click(); await espera();
+      const pideDS4 = MSG.includes('m ds4');
+      await apretar(document.querySelector('#pad3 [data-b=TOUCH]'));
+      await apretar(document.querySelector('#pad3 [data-b=A]'));
+      const textos = [...document.querySelectorAll('#pad3 [data-b], #pad3 [data-t]')].map((e) => e.firstChild.textContent);
+      return { pideDS4, guardado: localStorage.getItem('mando'), msg: MSG.filter((m) => m[0] === 'b'), textos };""")
+    assert r["pideDS4"] and r["guardado"] == "ds4"
+    assert r["msg"] == ["b TOUCH 1", "b TOUCH 0", "b A 1", "b A 0"]
+    for t in ["✕", "○", "□", "△", "L1", "R2", "Touchpad", "Share", "Options", "PS"]:
+        assert t in r["textos"], t

@@ -95,7 +95,8 @@ iPhone gets its own version of the controller page (separate files, so it never 
 ## The two buttons at the top: ⚙ Settings and ☰ Menu
 
 **☰ Menu** (choose and do):
-- **Choose your controller:** Full (Xbox), Sideways remote, or Per game (Steam). Per game shows your installed games;
+- **Choose your controller:** Full (Xbox), Sideways remote, PS4 (DualShock 4: big touchpad, PS button,
+  △ ○ ✕ □ and both sticks at the bottom; the PC sees it as a DualShock 4), or Per game (Steam). Per game shows your installed games;
   tap one to build a controller for its kind (racing, shooter, platformer, sports, fighting or full).
 - **Controller editor:** move, resize, change shape, color, what each button sends and its text; add buttons,
   sticks and D-pads; undo and grid; each button can be **normal**, **⚡ turbo** or **📌 toggle**.

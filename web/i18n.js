@@ -15,7 +15,7 @@
     "Elegí el control": "Choose your controller",
     "Completo (Xbox)": "Full (Xbox)",
     "Alargado (1, 2, A, B)": "Sideways remote (1, 2, A, B)",
-    "Por juego (Steam)": "Per game (Steam)",
+    "Por juego (Steam)": "Per game (Steam)", "PS4 (DualShock 4)": "PS4 (DualShock 4)",
     "Control para": "Controller for",
     "(sugerido)": "(suggested)",
     "Más": "More",

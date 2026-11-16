@@ -133,6 +133,8 @@ Arriba al centro del control están el puntito de conexión y dos botones.
 - **Elegí el control:**
   - **Completo (Xbox):** dos sticks, cruceta, A/B/X/Y, gatillos y Start/Select.
   - **Alargado:** de una mano y acostado, con cruceta, 1, 2, A, B, + / inicio / − y Derrape.
+  - **PS4 (DualShock 4):** con la forma de un control de PS4: touchpad grande, Share/Options, botón PS,
+    △ ○ ✕ □ y los dos sticks juntos abajo. Al elegirlo, la PC lo ve como un DualShock 4.
   - **Por juego (Steam):** muestra tus juegos instalados con su portada. Al tocar uno se arma un control según su
     tipo: carreras, disparos, plataformas, deportes, pelea o completo. Si la opción está prendida, el control
     cambia solo cuando abrís un juego en la PC. En «Control para…» podés elegir otro tipo.

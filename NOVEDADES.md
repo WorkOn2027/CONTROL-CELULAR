@@ -1,5 +1,12 @@
 # Novedades
 
+## 1.4.0
+
+- **Control de PS4:** un control nuevo con la forma de uno de PS4: L1/L2/R1/R2, un touchpad grande en el centro
+  con Share y Options a los costados, cruceta, botón PS, △ ○ ✕ □ con sus colores y los dos sticks juntos abajo.
+  Al elegirlo, la PC lo ve como un DualShock 4. Se puede editar como cualquier otro control.
+- Por dentro: el código quedó ordenado en partes y hay más de 50 pruebas automáticas (`probar.bat`).
+
 ## 1.3.0
 
 - **iPhone:** versión propia de la página del control y de la guía del certificado (archivos aparte de los de
