@@ -13,7 +13,9 @@ EMPAQUETADO = getattr(sys, "frozen", False)
 _AQUI = Path(__file__).resolve().parent
 
 RECURSOS = Path(getattr(sys, "_MEIPASS", _AQUI))
-if EMPAQUETADO:
+if os.environ.get("CONTROL_DATOS"):  # las pruebas usan una carpeta aparte, para no tocar tus datos
+    DATOS = Path(os.environ["CONTROL_DATOS"])
+elif EMPAQUETADO:
     DATOS = Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "ControlCelular"
 else:
     DATOS = _AQUI

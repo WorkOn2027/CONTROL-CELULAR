@@ -4,8 +4,11 @@ title CONTROL CELULAR - Construir el .exe
 cd /d "%~dp0"
 rem Arma dist\ControlCelular.exe: un solo archivo con Python, las librerías y la página del control adentro.
 
-if not exist ".venv\Scripts\python.exe" call instalar.bat || exit /b 1
+if not exist ".venv\Scripts\python.exe" call "%~dp0instalar.bat" || exit /b 1
 ".venv\Scripts\python.exe" -m pip install -q -r requirements-dev.txt || goto :error
+".venv\Scripts\python.exe" herramientas\hacer_iphone.py || goto :error
+rem Antes de armar el .exe se corren las pruebas: si algo está roto, no se arma.
+call "%~dp0probar.bat" sin-pausa || goto :error
 ".venv\Scripts\python.exe" herramientas\iconos.py || goto :error
 
 ".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onefile --console ^

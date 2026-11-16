@@ -213,20 +213,29 @@ Todo se guarda para cada celular, también en la PC.
 
 | Archivo | Qué hace |
 |---|---|
-| `server.py` | Servidor: crea el control virtual (vgamepad + ViGEmBus), sirve la página y recibe los botones por WebSocket |
-| `bandeja.py` | El ícono al lado del reloj (QR, ventana, iniciar con Windows, celulares, versión, desinstalar, salir) |
-| `version.py` | Número de versión y aviso de versión nueva |
-| `red.py` | Revisa el firewall y si la red es privada; si falta algo, pregunta y lo arregla con permiso de Windows |
-| `rutas.py` | Dónde están los archivos, tanto en Python como en el `.exe` |
-| `certs.py` | Crea el certificado propio para HTTPS en la red local |
+| `server.py` | Arma todo y atiende la conexión de cada celular |
+| `mandos.py` | Los controles virtuales (Xbox 360 y DualShock 4) y la traducción de botones |
+| `celulares.py` | Celulares emparejados, sus ajustes, el código y el límite de intentos |
+| `paginas.py` | Las páginas web y el QR |
+| `certs.py` | El certificado propio para HTTPS en la red local |
 | `steam.py` | Lee la biblioteca de Steam de la PC (juegos, tipo, portadas, juego abierto) |
-| `web/index.html` | El control del celular para Android (HTML, CSS y JavaScript puro, sin librerías) |
-| `web/iphone.html`, `web/configurar-iphone.html` | La versión de iPhone (archivos aparte) |
-| `web/i18n.js`, `idioma.py` | El inglés: en la página del control y en la PC |
-| `web/plantillas.js` | Los controles: completo, alargado, uno por tipo de juego y perfiles propios por juego |
-| `web/configurar.html` | La página de la primera vez (instalar el certificado) |
-| `iniciar.bat`, `instalar.bat` | Arrancar con Python (la primera vez instala solo) |
-| `construir.bat` | Arma `dist\ControlCelular.exe` con PyInstaller |
+| `red.py` | Revisa el firewall y si la red es privada; si falta algo, pregunta y lo arregla con permiso de Windows |
+| `bandeja.py` | El ícono al lado del reloj |
+| `idioma.py`, `web/i18n.js` | El inglés, en la PC y en la página del control |
+| `version.py`, `rutas.py` | La versión y el aviso de versión nueva; dónde están los archivos (Python o `.exe`) |
+| `web/index.html`, `web/configurar.html` | El control y la guía del certificado (Android) |
+| `web/iphone.html`, `web/configurar-iphone.html` | La versión de iPhone: **se generan solos**, no se editan a mano |
+| `web/plantillas.js` | Los controles: completo, alargado, uno por tipo de juego y perfiles por juego |
+
+### Para cambiar algo
+
+1. Cambiá la versión de Android (`web/index.html` o `web/configurar.html`).
+2. Corré `python herramientas/hacer_iphone.py`: genera la versión de iPhone con sus cambios propios. Así cada cambio
+   se hace una sola vez y las dos versiones nunca quedan distintas.
+3. Corré **`probar.bat`**: son más de 50 pruebas automáticas en unos 20 segundos. Prueban el servidor con controles
+   de mentira, así que no hace falta ViGEmBus, y las páginas de Android e iPhone en un Chrome invisible. También
+   revisan que ningún control tenga botones encimados. No tocan tus datos ni tus puertos.
+4. `construir.bat` arma el `.exe`. Antes corre las pruebas: si algo falla, no lo arma.
 
 Para agregar un control propio para un juego, sumalo en `PERFILES` dentro de `web/plantillas.js` con su número de
 Steam (appid).

@@ -15,3 +15,5 @@ respaldos/
 ajustes.json
 ajustes-formato-viejo.json
 config.json
+# Pruebas
+.pytest_cache/
