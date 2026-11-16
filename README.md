@@ -107,7 +107,11 @@ iguales.
 
 ---
 
-## Qué tiene el menú ☰
+## Los botones de arriba: ⚙ Opciones y ☰ Menú
+
+Arriba al centro del control están el puntito de conexión y dos botones.
+
+### ☰ Menú: elegir y hacer
 
 - **Elegí el control:**
   - **Completo (Xbox):** dos sticks, cruceta, A/B/X/Y, gatillos y Start/Select.
@@ -124,26 +128,30 @@ iguales.
     mantenés) o **📌 fijo** (un toque lo deja apretado y otro lo suelta; sirve, por ejemplo, para acelerar sin
     tener el dedo encima);
   - mientras editás, no se manda nada a la PC, y cada control guarda su propia edición.
-- **La PC lo ve como:** **control de Xbox 360**, o **DualShock 4** de PlayStation para juegos y emuladores que lo
-  prefieren. Con DualShock 4 los botones se muestran como ✕ ○ □ △, y el editor permite usar el touchpad.
-- **Modo zurdo:** da vuelta el control como un espejo. Los grupos de botones, como el rombo, mantienen su orden.
-  El editor muestra el control al derecho.
+- **Copiar ajustes de otro celular:** trae los controles editados y las opciones de otro celular emparejado.
+- **Ver tutorial**, **Pantalla completa** e **Instalar app**.
+
+### ⚙ Opciones: una ventana con tres pestañas
+
+- **General:**
+  - **Vibrar al tocar** y **Vibración del juego**.
+  - **Modo noche:** colores oscuros en todo, para jugar con poca luz. Apagado, el control es blanco.
+  - **Modo zurdo:** da vuelta el control como un espejo. Los grupos de botones, como el rombo, mantienen su orden.
+    El editor muestra el control al derecho.
+  - **La PC lo ve como:** **Xbox 360**, o **DualShock 4** de PlayStation, para juegos y emuladores que lo
+    prefieren. Con DualShock 4 los botones se muestran como ✕ ○ □ △, y el editor permite usar el touchpad.
 - **Giroscopio:**
-  - **Volante:** inclinás el celular y mueve el stick izquierdo.
+  - **Volante:** inclinás el celular y mueve el stick izquierdo. Tiene «Centrar».
   - **Apuntar:** movés el celular y mueve el stick derecho.
   - **Movimiento real** (solo DualShock 4): el celular funciona como el sensor de movimiento de un control de
-    PlayStation. Lo usan Steam (el giroscopio de Steam Input) y emuladores como Cemu o Yuzu. Si un eje te va al
-    revés, usá «invertir».
-  - Se ajusta con sensibilidad e invertir.
-- **Vibración:** al tocar los botones, y cuando el juego hace vibrar el control.
+    PlayStation. Lo usan Steam (el giroscopio de Steam Input) y emuladores como Cemu o Yuzu.
+  - **Sensibilidad**, **invertir horizontal** e **invertir vertical**.
 - **Sticks:** para cada stick, por separado:
   - **zona muerta:** cuánto hay que mover antes de que responda, para que no se mueva solo;
   - **respuesta:** suave (más precisa en movimientos chicos, ideal para apuntar), normal o rápida;
   - **recorrido:** cuánto hay que mover el dedo para llegar al máximo.
-- **Modo noche:** colores oscuros en el control, el menú y el editor, para jugar con poca luz. Apagado, el control
-  es blanco. Se guarda para cada celular.
-- **Ver tutorial:** repite la guía del primer uso.
-- **Copiar ajustes de otro celular:** trae los controles editados y las opciones de otro celular emparejado.
+
+Todo se guarda para cada celular, también en la PC.
 
 ---
 

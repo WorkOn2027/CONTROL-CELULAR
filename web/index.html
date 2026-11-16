@@ -158,8 +158,41 @@
               gap: 3vh 5vw; padding: 5vh 6vw; overflow-y: auto; touch-action: pan-y; text-align: left; }
   #menu h2 { font-size: 4.6vh; grid-column: 1 / -1; }
   #menu .col { display: flex; flex-direction: column; gap: 3vh; align-items: flex-start; }
-  #menu .ayudaSticks { grid-column: 1 / -1; font-size: 3vh; opacity: .75; line-height: 1.4; }
-  .stickOpts .valor { min-width: 7vh; display: inline-block; font-weight: 700; }
+  #menu .acciones button, #menu .acciones a.btn { font-size: 3.8vh; }
+
+  /* ⚙ Opciones */
+  #ajustes.ver { display: flex; padding: 3vh 3vw; }
+  .ajCaja { display: flex; width: 100%; height: 100%; background: var(--superficie); border-radius: 4vh;
+            box-shadow: 0 0 0 1px var(--linea); overflow: hidden; text-align: left; }
+  .ajTabs { display: flex; flex-direction: column; gap: 1.5vh; padding: 3vh 2vw; width: 24vw; flex: none;
+            background: var(--fondo); border-right: 1px solid var(--linea); }
+  .ajTitulo { font-size: 4.6vh; font-weight: 800; margin: 0 0 2vh 1vw; }
+  .capa .ajTabs button { text-align: left; font-size: 3.8vh; padding: 2vh 2vw; border: 0; background: transparent;
+                         border-radius: 2.5vh; }
+  .capa .ajTabs button.si { background: var(--superficie); color: var(--X); font-weight: 700;
+                            box-shadow: 0 0 0 1px var(--linea); }
+  .capa .ajTabs .ajListo { margin-top: auto; background: var(--X); color: #fff; text-align: center; font-weight: 700; }
+  .ajContenido { flex: 1; overflow-y: auto; touch-action: pan-y; padding: 2vh 3vw; }
+  .ajPanel { display: none; } .ajPanel.si { display: block; }
+  .capa .fila { display: flex; align-items: center; justify-content: space-between; gap: 3vw; padding: 2.2vh 0;
+                border-bottom: 1px solid var(--linea); font-size: 3.8vh; }
+  .fila:last-child { border-bottom: 0; }
+  .fila .txt { display: flex; flex-direction: column; gap: .6vh; }
+  .fila .txt small { font-size: 2.9vh; opacity: .65; font-weight: 400; }
+  .fila .ctrl { display: flex; align-items: center; gap: 1.5vw; }
+  .capa .fila input[type=range] { width: 22vw; }
+  .valor { min-width: 7vh; display: inline-block; font-weight: 700; text-align: right; font-size: 3.4vh; }
+  /* Interruptor (como los del celular) */
+  .capa input.interruptor { appearance: none; -webkit-appearance: none; flex: none; width: 10vh; height: 5.6vh;
+         border-radius: 2.8vh; background: var(--tecla-borde); position: relative; transition: background .15s; }
+  .capa input.interruptor::before { content: ""; position: absolute; top: .6vh; left: .6vh; width: 4.4vh; height: 4.4vh;
+         border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .capa input.interruptor:checked { background: var(--X); }
+  .capa input.interruptor:checked::before { transform: translateX(4.4vh); }
+  .ajSticks { display: flex; flex-direction: column; gap: 3vh; }
+  .ajSticks h3 { font-size: 4vh; margin: 1vh 0 0; color: var(--X); }
+  .ayudaSticks { display: block; font-size: 2.9vh; opacity: .65; line-height: 1.45; margin-top: 2vh; }
+  .ajBtn { width: 9vh; height: 7vh; border-radius: 3.5vh; font-size: 3.8vh; }
   #menu .ancho { grid-column: 1 / -1; display: flex; gap: 3vw; flex-wrap: wrap; }
   #error { color: var(--B); font-size: 4vh; min-height: 5vh; }
   #tutorial { z-index: 15; }
@@ -261,47 +294,69 @@
   <div class="ancho" id="filaTipo" hidden>
     <label>Control para <b id="tipoNombre"></b>: <select id="optTipo"></select></label>
   </div>
-  <h2>Opciones</h2>
-  <div class="col">
-    <label><input type="checkbox" id="optToque"> Vibrar al tocar</label>
-    <label><input type="checkbox" id="optJuego"> Vibración del juego</label>
-    <label><input type="checkbox" id="optNoche"> Modo noche</label>
-    <label><input type="checkbox" id="optZurdo"> Modo zurdo (dar vuelta el control)</label>
-    <label>La PC lo ve como
-      <select id="optMando">
-        <option value="xbox">Control de Xbox 360</option>
-        <option value="ds4">DualShock 4 (PlayStation)</option>
-      </select>
-    </label>
-    <button id="pantalla">Pantalla completa</button>
-    <button id="editor">Editor de control</button>
-    <button id="verTutorial">Ver tutorial</button>
+  <h2>Más</h2>
+  <div class="ancho acciones">
+    <button id="abrirAjustes">⚙ Opciones</button>
+    <button id="editor">✏️ Editor de control</button>
     <button id="copiarAjustes">Copiar ajustes de otro celular</button>
-  </div>
-  <div class="col" id="giroOpts">
-    <label>Giroscopio
-      <select id="optGiro">
-        <option value="0">Apagado</option>
-        <option value="v">Volante (inclinar → stick izq.)</option>
-        <option value="a">Apuntar (mover → stick der.)</option>
-        <option value="m">Movimiento real (solo DualShock 4)</option>
-      </select>
-    </label>
-    <label>Sensibilidad <input type="range" id="optSens" min="1" max="10" step="1"></label>
-    <label><input type="checkbox" id="optInvX"> Invertir horizontal</label>
-    <label><input type="checkbox" id="optInvY"> Invertir vertical</label>
-  </div>
-  <h2>Sticks</h2>
-  <div class="col stickOpts" data-k="L"><b>Stick izquierdo</b></div>
-  <div class="col stickOpts" data-k="R"><b>Stick derecho</b></div>
-  <small class="ayudaSticks"><b>Zona muerta:</b> cuánto hay que mover antes de que responda (más = no se mueve solo).
-    <b>Respuesta:</b> suave es más precisa en movimientos chicos (ideal para apuntar); rápida llega al máximo antes.
-    <b>Recorrido:</b> cuánto hay que mover el dedo para llegar al máximo (menos = movés menos el dedo).</small>
-  <div class="ancho">
-    <button id="cerrar">Volver al control</button>
-    <button id="centrar" hidden>Centrar volante</button>
+    <button id="verTutorial">Ver tutorial</button>
+    <button id="pantalla">Pantalla completa</button>
     <button id="instalar" hidden>Instalar app</button>
     <a class="btn" id="activar" href="/configurar.html" hidden>Activar app y giroscopio</a>
+  </div>
+  <div class="ancho"><button id="cerrar" class="principal">Volver al control</button></div>
+</div>
+
+<!-- ⚙ Opciones: pestañas a la izquierda, cada opción en una fila con su explicación -->
+<div class="capa" id="ajustes">
+  <div class="ajCaja">
+    <nav class="ajTabs">
+      <div class="ajTitulo">⚙ Opciones</div>
+      <button data-tab="general" class="si">General</button>
+      <button data-tab="giro" id="tabGiro">Giroscopio</button>
+      <button data-tab="sticks">Sticks</button>
+      <button id="ajCerrar" class="ajListo">Listo</button>
+    </nav>
+    <div class="ajContenido">
+      <section class="ajPanel si" data-panel="general">
+        <label class="fila"><span class="txt"><b>Vibrar al tocar</b><small>Un toquecito cada vez que apretás un botón.</small></span>
+          <input type="checkbox" class="interruptor" id="optToque"></label>
+        <label class="fila"><span class="txt"><b>Vibración del juego</b><small>El celular vibra cuando el juego hace vibrar el control.</small></span>
+          <input type="checkbox" class="interruptor" id="optJuego"></label>
+        <label class="fila"><span class="txt"><b>Modo noche</b><small>Colores oscuros, para jugar con poca luz.</small></span>
+          <input type="checkbox" class="interruptor" id="optNoche"></label>
+        <label class="fila"><span class="txt"><b>Modo zurdo</b><small>Da vuelta el control como un espejo.</small></span>
+          <input type="checkbox" class="interruptor" id="optZurdo"></label>
+        <label class="fila"><span class="txt"><b>La PC lo ve como</b><small>DualShock 4 sirve para juegos y emuladores de PlayStation.</small></span>
+          <select id="optMando"><option value="xbox">Xbox 360</option><option value="ds4">DualShock 4</option></select></label>
+      </section>
+      <section class="ajPanel" data-panel="giro" id="giroOpts">
+        <label class="fila"><span class="txt"><b>Modo</b><small>Mover el celular para controlar el juego.</small></span>
+          <select id="optGiro">
+            <option value="0">Apagado</option>
+            <option value="v">Volante (stick izq.)</option>
+            <option value="a">Apuntar (stick der.)</option>
+            <option value="m">Movimiento real (DualShock 4)</option>
+          </select></label>
+        <label class="fila"><span class="txt"><b>Sensibilidad</b><small>Cuánto responde a cada movimiento.</small></span>
+          <span class="ctrl"><input type="range" id="optSens" min="1" max="10" step="1"><span class="valor" id="valSens"></span></span></label>
+        <label class="fila"><span class="txt"><b>Invertir horizontal</b><small>Si gira para el lado contrario.</small></span>
+          <input type="checkbox" class="interruptor" id="optInvX"></label>
+        <label class="fila"><span class="txt"><b>Invertir vertical</b><small>Si sube cuando querés bajar.</small></span>
+          <input type="checkbox" class="interruptor" id="optInvY"></label>
+        <div class="fila" id="filaCentrar" hidden><span class="txt"><b>Centrar volante</b><small>Sostené el celular derecho y tocá.</small></span>
+          <button id="centrar">Centrar</button></div>
+      </section>
+      <section class="ajPanel" data-panel="sticks">
+        <div class="ajSticks">
+          <div class="stickOpts" data-k="L"><h3>Stick izquierdo</h3></div>
+          <div class="stickOpts" data-k="R"><h3>Stick derecho</h3></div>
+        </div>
+        <small class="ayudaSticks"><b>Zona muerta:</b> cuánto mover antes de que responda (más = no se mueve solo).
+          <b>Respuesta:</b> suave es más precisa en movimientos chicos (ideal para apuntar). <b>Recorrido:</b> cuánto
+          mover el dedo para llegar al máximo.</small>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -718,17 +773,18 @@
       const s = opt.giro === "m" ? null : sticks[opt.giro === "v" ? "L" : "R"]; // "m" no usa ningún stick
       if (s && s.el) s.el.classList.add("giro");
     }
-    $("centrar").hidden = opt.giro !== "v";
+    $("filaCentrar").hidden = opt.giro !== "v";
   }
 
   // ---------- Toques ----------
   function alTocar(e) {
     if (editando) { edTocar(e); return; }
-    const el = e.target.closest(".stick, [data-dpad], [data-b], [data-t], .menuBtn");
+    const el = e.target.closest(".stick, [data-dpad], [data-b], [data-t], .menuBtn, .ajBtn");
     if (!el) return;
     e.preventDefault();
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
     if (el.classList.contains("menuBtn")) { abrirMenu(); return; }
+    if (el.classList.contains("ajBtn")) { abrirAjustes(); return; }
     if (el.classList.contains("stick")) {
       const s = sticks[el.dataset.s], r = el.getBoundingClientRect();
       if (s.el !== el) { s.el = el; s.perilla = el.firstElementChild; s.radioVis = 1; } // puede haber dos del mismo lado
@@ -814,13 +870,28 @@
   }
   function abrirMenu() {
     soltarTodo(true);
-    $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego; $("optNoche").checked = opt.noche;
-    $("optZurdo").checked = opt.zurdo; $("optMando").value = opt.mando;
-    mostrarSticks();
-    $("optGiro").value = opt.giro; $("optSens").value = opt.sens;
-    $("optInvX").checked = opt.invX; $("optInvY").checked = opt.invY;
     $("menu").classList.add("ver");
   }
+
+  // ---------- ⚙ Opciones (ventana con pestañas) ----------
+  function abrirAjustes() {
+    soltarTodo(true);
+    $("menu").classList.remove("ver");
+    $("optToque").checked = opt.toque; $("optJuego").checked = opt.juego; $("optNoche").checked = opt.noche;
+    $("optZurdo").checked = opt.zurdo; $("optMando").value = opt.mando;
+    $("optGiro").value = opt.giro; $("optSens").value = opt.sens; $("valSens").textContent = opt.sens;
+    $("optInvX").checked = opt.invX; $("optInvY").checked = opt.invY;
+    mostrarSticks();
+    $("ajustes").classList.add("ver");
+  }
+  function pestaña(nombre) {
+    document.querySelectorAll(".ajTabs [data-tab]").forEach((b) => b.classList.toggle("si", b.dataset.tab === nombre));
+    document.querySelectorAll(".ajPanel").forEach((p) => p.classList.toggle("si", p.dataset.panel === nombre));
+    $("ajustes").querySelector(".ajContenido").scrollTop = 0;
+  }
+  document.querySelectorAll(".ajTabs [data-tab]").forEach((b) => b.onclick = () => pestaña(b.dataset.tab));
+  $("ajCerrar").onclick = () => $("ajustes").classList.remove("ver");
+  $("abrirAjustes").onclick = abrirAjustes;
   const casilla = (id, clave) => $(id).onchange = (e) => { opt[clave] = e.target.checked; guardar(clave, opt[clave] ? "1" : "0"); };
   casilla("optToque", "toque"); casilla("optJuego", "juego"); casilla("optInvX", "invX"); casilla("optInvY", "invY");
   casilla("optNoche", "noche"); $("optNoche").addEventListener("change", aplicarNoche);
@@ -831,15 +902,17 @@
     dibujarControl(especActual);
   };
 
-  // ☰ → Sticks: zona muerta, respuesta y recorrido de cada stick (se aplican al instante).
+  // ⚙ → Sticks: zona muerta, respuesta y recorrido de cada stick (se aplican al instante).
   const DEF_STICK = { dz: "5", curva: "normal", alc: "100" };
   document.querySelectorAll(".stickOpts").forEach((col) => {
     const k = col.dataset.k;
     col.insertAdjacentHTML("beforeend",
-      `<label>Zona muerta <input type="range" min="0" max="30" step="1" data-st="dz${k}"> <span class="valor" data-v="dz${k}"></span></label>` +
-      `<label>Respuesta <select data-st="curva${k}"><option value="suave">Suave (precisa)</option>` +
-      `<option value="normal">Normal</option><option value="rapida">Rápida</option></select></label>` +
-      `<label>Recorrido <input type="range" min="50" max="100" step="5" data-st="alc${k}"> <span class="valor" data-v="alc${k}"></span></label>`);
+      `<label class="fila"><span class="txt"><b>Zona muerta</b></span><span class="ctrl">` +
+      `<input type="range" min="0" max="30" step="1" data-st="dz${k}"><span class="valor" data-v="dz${k}"></span></span></label>` +
+      `<label class="fila"><span class="txt"><b>Respuesta</b></span><select data-st="curva${k}">` +
+      `<option value="suave">Suave</option><option value="normal">Normal</option><option value="rapida">Rápida</option></select></label>` +
+      `<label class="fila"><span class="txt"><b>Recorrido</b></span><span class="ctrl">` +
+      `<input type="range" min="50" max="100" step="5" data-st="alc${k}"><span class="valor" data-v="alc${k}"></span></span></label>`);
   });
   function mostrarSticks() {
     document.querySelectorAll("[data-st]").forEach((c) => {
@@ -854,14 +927,14 @@
   }));
   $("optJuego").addEventListener("change", () => { if (!opt.juego && puedeVibrar) navigator.vibrate(0); });
   $("optGiro").onchange = (e) => { opt.giro = e.target.value; guardar("giro", opt.giro); aplicarGiro(); };
-  $("optSens").oninput = (e) => { opt.sens = +e.target.value; guardar("sens", String(opt.sens)); };
+  $("optSens").oninput = (e) => { opt.sens = +e.target.value; guardar("sens", String(opt.sens)); $("valSens").textContent = opt.sens; };
   $("centrar").onclick = () => { ceroVolante = ultimoAngulo; };
   $("pantalla").onclick = () => { pantallaCompleta(); $("menu").classList.remove("ver"); };
   $("cerrar").onclick = () => $("menu").classList.remove("ver");
 
   if (!seguro) {
     // Sin HTTPS el navegador no deja usar el giroscopio ni instalar la app.
-    $("giroOpts").hidden = true; $("activar").hidden = false; opt.giro = "0";
+    $("giroOpts").hidden = true; $("tabGiro").hidden = true; $("activar").hidden = false; opt.giro = "0";
   }
   let pedidoInstalar = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); pedidoInstalar = e; $("instalar").hidden = false; });
@@ -972,7 +1045,8 @@
     });
     const b = espec.barra || { x: 50, y: 9 };
     const barra = nuevo("barra3" + (b.v ? " v" : ""), b);
-    barra.innerHTML = '<div class="punto"></div><span class="estadoCon"></span><div class="tecla menuBtn">☰</div>';
+    barra.innerHTML = '<div class="punto"></div><span class="estadoCon"></span>' +
+                      '<div class="tecla ajBtn" title="Opciones">⚙</div><div class="tecla menuBtn" title="Menú">☰</div>';
     if (opt.modelo === "juego" && juegoElegido) {
       const n = nuevo("nombreJuego", { x: 50, y: 20 }); n.textContent = juegoElegido.nombre;
     }
@@ -1243,11 +1317,11 @@
     ["🎮", "¡Listo, estás conectado!", "El puntito verde de arriba indica que el control está conectado a la PC. Al lado ves tu número de jugador y la demora (ms)."],
     ["☰", "Elegí tu control", "En el menú ☰ elegís entre Completo, Alargado o Por juego: muestra tus juegos de Steam y arma un control cómodo para cada uno."],
     ["✏️", "Hacelo a tu gusto", "En ☰ → Editor de control movés, agrandás, pintás y cambiás cualquier botón. Tus cambios se guardan en la PC."],
-    ["📱", "Giroscopio", "En ☰ → Giroscopio: «Volante» para inclinar el celular como un volante, o «Apuntar» para mover la mira moviendo el celular."],
+    ["⚙", "Opciones", "En ⚙ ajustás todo: vibración, modo noche, modo zurdo, el giroscopio (volante o apuntar) y la respuesta de los sticks."],
   ];
   let tutPaso = 0;
   function mostrarPaso() {
-    const pasos = seguro ? TUTORIAL : TUTORIAL.slice(0, 3); // sin HTTPS no hay giroscopio
+    const pasos = TUTORIAL;
     const [icono, titulo, texto] = pasos[tutPaso];
     $("tutIcono").textContent = icono; $("tutTitulo").textContent = titulo; $("tutTexto").textContent = texto;
     $("tutPuntos").innerHTML = pasos.map((_, i) => `<span class="${i === tutPaso ? "si" : ""}"></span>`).join("");
