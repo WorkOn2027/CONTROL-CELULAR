@@ -5,6 +5,7 @@ cd /d "%~dp0"
 rem Arma, en dist\:
 rem   ControlCelular-Instalar-<versión>.exe   el instalador (lo recomendado para compartir)
 rem   ControlCelular.exe                      la versión portátil (un solo archivo, sin instalar)
+rem La versión en carpeta (para el instalador) se arma en %TEMP%: dentro de OneDrive se traba al borrarla.
 
 if not exist ".venv\Scripts\python.exe" call "%~dp0instalar.bat" || exit /b 1
 ".venv\Scripts\python.exe" -m pip install -q -r requirements-dev.txt || goto :error
@@ -27,7 +28,7 @@ echo   1/3  Versión portátil (un solo archivo)...
 
 echo.
 echo   2/3  Versión en carpeta, para el instalador (arranca más rápido)...
-".venv\Scripts\python.exe" -m PyInstaller %OPCIONES% --onedir --distpath dist\instalable arranque.py || goto :error
+".venv\Scripts\python.exe" -m PyInstaller %OPCIONES% --onedir --distpath "%TEMP%\ControlCelular-carpeta" arranque.py || goto :error
 
 echo.
 echo   3/3  Instalador...
@@ -37,7 +38,7 @@ if not defined ISCC (
   echo   No encontré Inno Setup 6: se armó solo la versión portátil. Para el instalador, instalá Inno Setup.
   goto :listo
 )
-%ISCC% /Q /DVersion=%VERSION% /DOrigen="%~dp0dist\instalable\ControlCelular" herramientas\instalador.iss || goto :error
+%ISCC% /Q /DVersion=%VERSION% /DOrigen="%TEMP%\ControlCelular-carpeta\ControlCelular" herramientas\instalador.iss || goto :error
 
 :listo
 echo.

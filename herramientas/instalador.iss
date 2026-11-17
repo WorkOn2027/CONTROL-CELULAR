@@ -1,4 +1,4 @@
-; Instalador de Control Celular (Inno Setup 6). Lo arma construir.bat:
+﻿; Instalador de Control Celular (Inno Setup 6). Lo arma construir.bat:
 ;   ISCC /DVersion=1.5.0 /DOrigen=<carpeta con ControlCelular.exe y _internal> herramientas\instalador.iss
 ;
 ; Con UN solo permiso de administrador deja todo listo para escanear el QR y jugar:
@@ -7,13 +7,16 @@
 ;   - abre el firewall SOLO para el programa y sus puertos, en redes privadas y solo para la red de casa,
 ;     y saca los bloqueos que Windows le haya puesto (el cartel del firewall cerrado con «Cancelar»);
 ;   - si la red está como «Pública», ofrece marcarla como privada (casilla, explicada).
+; Al actualizar, reemplaza la versión anterior (borra antes sus archivos) y, si la casilla está marcada, borra
+;   instaladores y versiones portátiles viejas de Descargas/Escritorio y restos temporales (limpiar_viejas.ps1).
+;   Nunca borra los ajustes ni los celulares emparejados.
 ; Al desinstalar saca el firewall y el arranque con Windows. Los datos del usuario quedan, salvo que los borre.
 
 #ifndef Version
   #define Version "0.0.0"
 #endif
 #ifndef Origen
-  #define Origen "..\dist\instalable\ControlCelular"
+  #define Origen GetEnv("TEMP") + "\ControlCelular-carpeta\ControlCelular"
 #endif
 #define Programa "Control Celular"
 #define Exe "ControlCelular.exe"
@@ -63,7 +66,11 @@ es.Firewall=Abriendo el firewall para Control Celular (solo red privada de casa)
 en.Firewall=Opening the firewall for Control Celular (private home network only)...
 es.Red=Marcando la red como privada...
 en.Red=Marking the network as private...
+es.Limpiar=Borrar versiones viejas que ya no sirven (instaladores y versiones portátiles anteriores en Descargas y Escritorio, y restos temporales). Tus ajustes no se tocan.
+es.Limpiando=Borrando versiones viejas...
 es.Abrir=Abrir Control Celular ahora
+en.Limpiar=Delete old versions you no longer need (previous installers and portable versions in Downloads and Desktop, and temporary leftovers). Your settings are kept.
+en.Limpiando=Deleting old versions...
 en.Abrir=Open Control Celular now
 es.FalloDriver=No se pudo instalar ViGEmBus (código %1). Control Celular va a ofrecer instalarlo cuando lo abras.
 en.FalloDriver=ViGEmBus couldn't be installed (code %1). Control Celular will offer to install it when you open it.
@@ -72,12 +79,18 @@ en.FalloDriver=ViGEmBus couldn't be installed (code %1). Control Celular will of
 Name: "escritorio"; Description: "{cm:Escritorio}"; GroupDescription: "{cm:Grupo}"
 Name: "privada"; Description: "{cm:Privada}"; GroupDescription: "{cm:Grupo}"; Check: HayRedPublica
 Name: "inicio"; Description: "{cm:Inicio}"; GroupDescription: "{cm:Grupo}"; Flags: unchecked
+Name: "limpiar"; Description: "{cm:Limpiar}"; GroupDescription: "{cm:Grupo}"
+
+[InstallDelete]
+; Antes de instalar, se borran los archivos del programa de la versión anterior (no los datos del usuario).
+Type: filesandordirs; Name: "{app}\_internal"
 
 [Files]
 Source: "{#Origen}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\terceros\{#ViGEm}"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: FaltaViGEm
 Source: "..\terceros\LICENCIA-ViGEmBus.txt"; DestDir: "{app}\licencias"
 Source: "..\LICENSE"; DestDir: "{app}\licencias"; DestName: "LICENCIA-Control-Celular.txt"
+Source: "limpiar_viejas.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
 [Icons]
 Name: "{group}\{#Programa}"; Filename: "{app}\{#Exe}"
@@ -153,7 +166,15 @@ begin
     'New-NetFirewallRule -DisplayName ''CONTROL CELULAR'' -Description ''Control de juegos desde el celular (solo red local privada)'' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8765,8443 -Profile Private -RemoteAddress LocalSubnet | Out-Null; ' +
     'New-NetFirewallRule -DisplayName ''CONTROL CELULAR (programa)'' -Description ''Control de juegos desde el celular (solo red local privada)'' -Direction Inbound -Action Allow -Program ''' + Programa + ''' -Profile Private -RemoteAddress LocalSubnet | Out-Null');
 
-  { 3. Red privada, solo si la persona marcó la casilla }
+  { 3. Versiones viejas, solo si la casilla está marcada (nunca el instalador que se está usando) }
+  if WizardIsTaskSelected('limpiar') then
+  begin
+    WizardForm.StatusLabel.Caption := CustomMessage('Limpiando');
+    Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{tmp}\limpiar_viejas.ps1') +
+         '" -Actual "' + ExpandConstant('{srcexe}') + '"', '', SW_HIDE, ewWaitUntilTerminated, Codigo);
+  end;
+
+  { 4. Red privada, solo si la persona marcó la casilla }
   if WizardIsTaskSelected('privada') then
   begin
     WizardForm.StatusLabel.Caption := CustomMessage('Red');

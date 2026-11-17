@@ -37,7 +37,9 @@ Usá tu celular Android o tu iPhone como **control de juegos para la PC**. Windo
    - instala **ViGEmBus**, el driver del control virtual, si falta;
    - abre el firewall solo para Control Celular, en la red privada de tu casa, y saca cualquier bloqueo de Windows;
    - si tu red está como «Pública», ofrece marcarla como privada (dejá la casilla marcada si es la red de tu casa);
-   - crea el ícono en el escritorio y en el menú Inicio.
+   - crea el ícono en el escritorio y en el menú Inicio;
+   - si ya tenías una versión anterior, la reemplaza y (casilla marcada) borra los instaladores y versiones
+     portátiles viejas de Descargas y Escritorio. Tus ajustes no se tocan.
 3. Al terminar, Control Celular se abre solo y muestra el QR: **escanealo con el celular y listo**.
 
 Para desinstalarlo: «Agregar o quitar programas» → Control Celular. Saca también el firewall y el arranque con

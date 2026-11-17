@@ -8,6 +8,9 @@
     con «Cancelar» el cartel del firewall, el celular no podía conectarse);
   - si la red está como «Pública», ofrece marcarla como privada;
   - crea los íconos (escritorio y menú Inicio) y se desinstala desde «Agregar o quitar programas».
+- **Actualizar sin ocupar lugar:** el instalador reemplaza la versión anterior y, con una casilla marcada de entrada,
+  borra los instaladores y versiones portátiles viejas de Descargas y Escritorio y los restos temporales. Tus
+  ajustes, controles editados y celulares emparejados no se tocan.
 - **Escanear y jugar:** al escanear el QR, el celular entra **directo al control**. El certificado (para instalar la
   app y usar el giroscopio) pasa a ser opcional: menú ☰ → «Activar app y giroscopio».
 - El programa instalado arranca más rápido (ya no se descomprime cada vez).

@@ -35,7 +35,9 @@ Use your **Android phone or iPhone as a game controller for your PC**. Windows, 
 1. Go to **[Releases](../../releases/latest)** and download **`ControlCelular-Instalar-….exe`**.
 2. Open it and click **Next → Install**. Windows asks for permission once, and the installer sets everything up:
    it installs **ViGEmBus** if missing, opens the firewall only for Control Celular on your private home network
-   (removing any Windows block), offers to mark a "Public" network as private, and creates the icons.
+   (removing any Windows block), offers to mark a "Public" network as private, and creates the icons. If you had an older version, it
+   replaces it and (checkbox on by default) deletes old installers and portable versions from Downloads and
+   Desktop. Your settings are kept.
 3. When it finishes, Control Celular opens and shows the QR code: **scan it with your phone and play**.
 
 To uninstall: Settings → Apps → Control Celular (it also removes the firewall rules and the autostart).
