@@ -4,6 +4,7 @@ sobre fondo oscuro. Sin logos ni marcas de nadie (el botón central es un círcu
   web/icono-192.png, web/icono-512.png   → app del celular y página (fondo oscuro redondeado)
   web/icono-maskable-512.png             → app del celular en Android (fondo a sangre, el control en la zona segura)
   web/icono-bandeja.png                  → ícono al lado del reloj (solo el control, líneas más gruesas)
+  web/animacion-cuerpo.png, web/animacion-neon.png → capas de la animación de arranque (animacion.py)
   herramientas/icono.ico                 → .exe, instalador y acceso directo (16 a 256 px)
 """
 
@@ -70,7 +71,8 @@ def borde(m, ancho):
     return ImageChops.subtract(m.filter(ImageFilter.MaxFilter(n)), m.filter(ImageFilter.MinFilter(n)))
 
 
-def dibujar(fondo=True, grosor=1.0, letras=True):
+def dibujar(fondo=True, grosor=1.0, letras=True, capas=False):
+    """Con capas=True devuelve (control sin neón, máscara del neón) para la animación de arranque."""
     lienzo = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     color = degradado()
 
@@ -139,6 +141,8 @@ def dibujar(fondo=True, grosor=1.0, letras=True):
             dn.text((p(cx), p(cy)), letra, font=fuente, fill=255, anchor="mm")
 
     lienzo.alpha_composite(detalles)
+    if capas:
+        return lienzo, neon
     # Brillo: el neón desenfocado, debajo de la línea nítida
     for radio, fuerza in ((.03, .55), (.01, .8)):
         halo = neon.filter(ImageFilter.GaussianBlur(p(radio))).point(lambda v, f=fuerza: min(255, int(v * f * 1.6)))
@@ -178,6 +182,17 @@ if __name__ == "__main__":
     cuadro = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
     cuadro.alpha_composite(bandeja.crop(caja), ((lado - (caja[2] - caja[0])) // 2, (lado - (caja[3] - caja[1])) // 2))
     guardar(cuadro, 64, WEB / "icono-bandeja.png")
+
+    # Animación de arranque en la PC: el control sin neón y, aparte, la máscara del neón (se enciende en animacion.py)
+    cuerpo, neon = dibujar(fondo=False, capas=True)
+    x0, y0, x1, y1 = ImageChops.lighter(cuerpo.getchannel("A"), neon).getbbox()
+    m = p(.06)  # margen para el brillo
+    caja = (max(0, x0 - m), max(0, y0 - m), min(S, x1 + m), min(S, y1 + m))
+    ancho = 560
+    alto = round(ancho * (caja[3] - caja[1]) / (caja[2] - caja[0]))
+    cuerpo.crop(caja).resize((ancho, alto), Image.LANCZOS).save(WEB / "animacion-cuerpo.png", optimize=True)
+    neon.crop(caja).resize((ancho, alto), Image.LANCZOS).save(WEB / "animacion-neon.png", optimize=True)
+    print("ok animación", ancho, alto)
 
     normal.resize((256, 256), Image.LANCZOS).save(
         AQUI / "icono.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])

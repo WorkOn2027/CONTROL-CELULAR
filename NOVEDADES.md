@@ -15,6 +15,9 @@
   app y usar el giroscopio) pasa a ser opcional: menú ☰ → «Activar app y giroscopio».
 - **Ícono nuevo:** un control con bordes de neón (celeste y verde) sobre fondo oscuro, en el escritorio, el menú
   Inicio, el ícono al lado del reloj y la app del celular.
+- **Animación de arranque:** al abrir Control Celular, el control de neón se enciende en el centro de la pantalla
+  (unos 2 segundos, mientras el programa arranca) y después aparece la ventana con el QR. No sale al arrancar oculto
+  con Windows ni al volver de minimizado.
 - El programa instalado arranca más rápido (ya no se descomprime cada vez).
 - Sigue estando la versión portátil `ControlCelular.exe`, que no se instala.
 

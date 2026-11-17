@@ -173,6 +173,11 @@ def main() -> None:
             sys.stdout.reconfigure(line_buffering=True, encoding="utf-8", errors="replace")
     except (AttributeError, ValueError):
         pass
+    try:  # el control de neón se enciende mientras el programa arranca (solo al abrirlo de cero)
+        import animacion
+        animacion.empezar()
+    except Exception:
+        pass
     try:
         if os.environ.get("CONTROL_SIMULAR_SIN_VIGEM") == "1":
             raise RuntimeError("Error: VIGEM_ERROR_BUS_NOT_FOUND")
