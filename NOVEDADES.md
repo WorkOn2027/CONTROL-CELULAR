@@ -13,6 +13,8 @@
   ajustes, controles editados y celulares emparejados no se tocan.
 - **Escanear y jugar:** al escanear el QR, el celular entra **directo al control**. El certificado (para instalar la
   app y usar el giroscopio) pasa a ser opcional: menú ☰ → «Activar app y giroscopio».
+- **Ícono nuevo:** un control con bordes de neón (celeste y verde) sobre fondo oscuro, en el escritorio, el menú
+  Inicio, el ícono al lado del reloj y la app del celular.
 - El programa instalado arranca más rápido (ya no se descomprime cada vez).
 - Sigue estando la versión portátil `ControlCelular.exe`, que no se instala.
 

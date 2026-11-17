@@ -178,7 +178,7 @@ def _hace(visto: int) -> str:
 
 def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
     """Pone el ícono (en su propio hilo) y devuelve una función para avisarle los jugadores conectados."""
-    imagen = Image.open(rutas.RECURSOS / "web" / "icono-192.png")
+    imagen = Image.open(rutas.RECURSOS / "web" / "icono-bandeja.png")
 
     def olvidar_uno(c):
         def accion():
