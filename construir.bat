@@ -15,6 +15,7 @@ call "%~dp0probar.bat" sin-pausa || goto :error
   --name ControlCelular ^
   --icon "%~dp0herramientas\icono.ico" ^
   --add-data "%~dp0web;web" ^
+  --add-data "%~dp0terceros;terceros" ^
   --collect-all vgamepad ^
   --hidden-import pystray._win32 ^
   --hidden-import bandeja ^

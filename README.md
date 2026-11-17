@@ -24,7 +24,7 @@ Usá tu celular Android o tu iPhone como **control de juegos para la PC**. Windo
 | **PC** | Windows 10 u 11 |
 | **Celular** | Android con Chrome, o iPhone con Safari |
 | **Red** | La PC y el celular conectados a la **misma red** (el WiFi de tu casa, o el hotspot del celular) |
-| **Driver** | **ViGEmBus** (gratis): es lo que crea el control de Xbox virtual. Si no lo tenés, el programa te avisa y te abre la página para descargarlo. |
+| **Driver** | **ViGEmBus**: es lo que crea el control virtual. **Viene incluido**: si no lo tenés, el programa te ofrece instalarlo. |
 
 ---
 
@@ -40,8 +40,9 @@ Usá tu celular Android o tu iPhone como **control de juegos para la PC**. Windo
    - La primera vez te pregunta si querés **abrir el firewall** (solo para la red de tu casa) y, si tu red está como
      «Pública», si querés marcarla como **privada**. Respondé **S**, solo si es la red de tu casa, y aceptá el
      permiso de Windows.
-   - Si falta **ViGEmBus**, te abre la página oficial. Descargá `ViGEmBus_..._x64_x86_arm64.exe`, instalalo y volvé a
-     abrir Control Celular.
+   - Si falta **ViGEmBus**, el driver del control virtual, te pregunta **«¿Lo instalo ahora?»**. Respondé **S**,
+     aceptá el permiso de Windows y tocá **Instalar** en su instalador. Viene incluido: es el instalador oficial,
+     firmado por su autor. Al terminar, Control Celular se vuelve a abrir solo.
 
 Tus datos (el certificado y los celulares emparejados) se guardan en `%LOCALAPPDATA%\ControlCelular`.
 
@@ -179,7 +180,7 @@ Todo se guarda para cada celular, también en la PC.
 | Pasa esto | Probá esto |
 |---|---|
 | El celular no abre la página | Fijate que la PC y el celular estén en la **misma red**. Cerrá y volvé a abrir Control Celular, y respondé **S** a abrir el firewall y a marcar la red como privada. También se cambia a mano en Configuración → Red e Internet → tu red → **Privada**. |
-| «Falta el driver ViGEmBus» | Instalalo desde [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases) y volvé a abrir Control Celular. |
+| «Falta el driver ViGEmBus» | Respondé **S** cuando el programa ofrezca instalarlo. Si preferís hacerlo a mano: [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). Si después de instalarlo sigue sin reconocerlo, reiniciá la PC. |
 | «Windows protegió su PC» | Es porque el programa no está firmado. Tocá **Más información → Ejecutar de todas formas**. Si no confiás, usá la opción con Python, que es el mismo código a la vista. |
 | El antivirus lo bloquea | Pasa a veces con programas armados con PyInstaller. Podés usar la opción con Python, o armar vos el `.exe` con `construir.bat`. |
 | «Control Celular ya está abierto» | Ya hay otra ventana del programa abierta. Usá esa, o cerrala antes. |
@@ -242,6 +243,12 @@ Todo se guarda para cada celular, también en la PC.
 
 Para agregar un control propio para un juego, sumalo en `PERFILES` dentro de `web/plantillas.js` con su número de
 Steam (appid).
+
+## Software de terceros
+
+Control Celular incluye, sin cambios, el instalador oficial de **[ViGEmBus](https://github.com/nefarius/ViGEmBus)**,
+de Nefarius Software Solutions e.U., con licencia BSD de 3 cláusulas. El aviso completo está en
+[`terceros/LICENCIA-ViGEmBus.txt`](terceros/LICENCIA-ViGEmBus.txt).
 
 ## Licencia
 

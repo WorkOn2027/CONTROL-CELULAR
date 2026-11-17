@@ -24,7 +24,7 @@ Use your **Android phone or iPhone as a game controller for your PC**. Windows, 
 | **PC** | Windows 10 or 11 |
 | **Phone** | Android with Chrome, or iPhone with Safari |
 | **Network** | The PC and the phone on the **same network** (your home WiFi, or your phone's hotspot) |
-| **Driver** | **ViGEmBus** (free): it creates the virtual controller. If it's missing, the program tells you and opens the download page. |
+| **Driver** | **ViGEmBus**: it creates the virtual controller. **It's included**: if you don't have it, the program offers to install it. |
 
 ---
 
@@ -40,8 +40,9 @@ Use your **Android phone or iPhone as a game controller for your PC**. Windows, 
    - The first time, it asks whether to **open the firewall** (only for your home network) and, if your network is
      "Public", whether to mark it as **private**. Answer **Y**, only if it's your home network, and accept Windows'
      prompt.
-   - If **ViGEmBus** is missing, it opens the official page. Download `ViGEmBus_..._x64_x86_arm64.exe`, install it and
-     open Control Celular again.
+   - If **ViGEmBus** (the virtual controller driver) is missing, it asks **"Install it now?"**. Answer **Y**, accept
+     Windows' prompt and click **Install** in its installer. It's included: the official installer, signed by its
+     author. When it finishes, Control Celular opens again by itself.
 
 ### With Python (if you want to see or change the code)
 
@@ -118,7 +119,7 @@ Everything is saved per phone, on the PC too: if the PC's IP changes or you rein
 | Problem | Try this |
 |---|---|
 | The phone can't open the page | Make sure the PC and the phone are on the **same network**. Close and reopen Control Celular and answer **Y** to open the firewall and mark the network as private. |
-| "ViGEmBus driver is missing" | Install it from [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases) and open Control Celular again. |
+| "ViGEmBus driver is missing" | Answer **Y** when the program offers to install it, or do it manually from [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). If it still isn't detected, restart your PC. |
 | "Windows protected your PC" | The program isn't signed. Tap **More info → Run anyway**, or use the Python option. |
 | The certificate isn't detected (iPhone) | Check you used **Safari** and turned on **full trust** (Settings → General → About → Certificate Trust Settings). |
 | It doesn't work on café, university or hotel WiFi | Those networks don't let devices see each other, and the controller doesn't open ports on public networks on purpose. Use your phone's hotspot. |
@@ -137,6 +138,12 @@ Everything is saved per phone, on the PC too: if the PC's IP changes or you rein
 - You can **forget** any paired phone from the icon.
 
 ---
+
+## Third-party software
+
+Control Celular includes, unmodified, the official installer of **[ViGEmBus](https://github.com/nefarius/ViGEmBus)**
+by Nefarius Software Solutions e.U., under the BSD 3-Clause License. Full notice in
+[`terceros/LICENCIA-ViGEmBus.txt`](terceros/LICENCIA-ViGEmBus.txt).
 
 ## License
 

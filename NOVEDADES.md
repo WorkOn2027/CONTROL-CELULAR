@@ -2,8 +2,10 @@
 
 ## 1.4.1
 
-- **Arreglo importante:** en una PC sin el driver **ViGEmBus**, el programa se cerraba al instante sin mostrar nada.
-  Ahora avisa que falta, abre la página para descargarlo y espera a que leas el mensaje.
+- **ViGEmBus viene incluido:** ya no hay que bajarlo aparte. Si la PC no tiene el driver, Control Celular pregunta
+  «¿Lo instalo ahora?» y abre el instalador oficial (firmado por su autor), que viaja dentro del programa. Al
+  terminar, Control Celular se vuelve a abrir solo.
+- **Arreglo importante:** en una PC sin ViGEmBus, el programa se cerraba al instante sin mostrar nada. Ya no pasa.
 - Si el programa no puede arrancar por cualquier otro motivo, muestra el error, lo guarda en `error.txt` (en
   `%LOCALAPPDATA%\ControlCelular`) y no se cierra solo.
 
