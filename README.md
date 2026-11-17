@@ -30,10 +30,25 @@ Usá tu celular Android o tu iPhone como **control de juegos para la PC**. Windo
 
 ## Instalación en la PC
 
-### Opción fácil: descargar el programa (recomendada)
+### Opción fácil: el instalador (recomendada)
 
-1. Entrá a **[Releases](../../releases/latest)** y descargá **`ControlCelular.exe`**. Es un solo archivo y no hace
-   falta instalar Python ni nada más.
+1. Entrá a **[Releases](../../releases/latest)** y descargá **`ControlCelular-Instalar-….exe`**.
+2. Abrilo y tocá **Siguiente → Instalar**. Windows pide permiso una sola vez, y el instalador deja todo listo:
+   - instala **ViGEmBus**, el driver del control virtual, si falta;
+   - abre el firewall solo para Control Celular, en la red privada de tu casa, y saca cualquier bloqueo de Windows;
+   - si tu red está como «Pública», ofrece marcarla como privada (dejá la casilla marcada si es la red de tu casa);
+   - crea el ícono en el escritorio y en el menú Inicio.
+3. Al terminar, Control Celular se abre solo y muestra el QR: **escanealo con el celular y listo**.
+
+Para desinstalarlo: «Agregar o quitar programas» → Control Celular. Saca también el firewall y el arranque con
+Windows.
+
+Si Windows muestra **«Windows protegió su PC»**, es porque el programa no está firmado: tocá **Más información →
+Ejecutar de todas formas**.
+
+### Opción portátil: sin instalar
+
+1. En **[Releases](../../releases/latest)** descargá **`ControlCelular.exe`**: es un solo archivo.
 2. Abrilo con doble clic. Podés dejarlo en cualquier carpeta, incluso en Descargas.
    - Windows puede mostrar **«Windows protegió su PC»**, porque el programa no está firmado. Tocá **Más información →
      Ejecutar de todas formas**.
@@ -82,8 +97,9 @@ Al pasar el mouse por el ícono, te dice qué jugadores están conectados.
 ### En el celular (la primera vez)
 
 1. **Escaneá el QR** con la cámara del celular, o abrí en Chrome la dirección `http://…:8765` que muestra la PC.
-2. Seguí los pasos de esa página para instalar el **certificado**, necesario para la app y el giroscopio. Cuando
-   lo instalás, la página lo detecta sola y te lleva al control. Cada celular tiene sus pasos:
+   **Entrás directo al control** y se empareja solo: ya podés jugar.
+2. **Opcional:** para instalarlo como app y usar el giroscopio, en el menú **☰** tocá **Activar app y
+   giroscopio** y seguí los pasos para instalar el **certificado**. Cada celular tiene los suyos:
    - **Android:** la página reconoce la marca (Samsung, Xiaomi, Motorola…) y te muestra el camino exacto en Ajustes.
    - **iPhone:** usá **Safari**. El certificado se instala como un **perfil** y después hay que **activar la
      confianza** en Ajustes → General → Información → Configuración de confianza de certificados.
@@ -239,7 +255,8 @@ Todo se guarda para cada celular, también en la PC.
 3. Corré **`probar.bat`**: son más de 50 pruebas automáticas en unos 20 segundos. Prueban el servidor con controles
    de mentira, así que no hace falta ViGEmBus, y las páginas de Android e iPhone en un Chrome invisible. También
    revisan que ningún control tenga botones encimados. No tocan tus datos ni tus puertos.
-4. `construir.bat` arma el `.exe`. Antes corre las pruebas: si algo falla, no lo arma.
+4. `construir.bat` arma el instalador (`herramientas/instalador.iss`, necesita [Inno Setup 6](https://jrsoftware.org/isinfo.php))
+   y la versión portátil. Antes corre las pruebas: si algo falla, no arma nada.
 
 Para agregar un control propio para un juego, sumalo en `PERFILES` dentro de `web/plantillas.js` con su número de
 Steam (appid).

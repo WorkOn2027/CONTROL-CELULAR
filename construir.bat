@@ -1,35 +1,55 @@
 @echo off
 chcp 65001 >nul
-title CONTROL CELULAR - Construir el .exe
+title CONTROL CELULAR - Construir
 cd /d "%~dp0"
-rem Arma dist\ControlCelular.exe: un solo archivo con Python, las librerías y la página del control adentro.
+rem Arma, en dist\:
+rem   ControlCelular-Instalar-<versión>.exe   el instalador (lo recomendado para compartir)
+rem   ControlCelular.exe                      la versión portátil (un solo archivo, sin instalar)
 
 if not exist ".venv\Scripts\python.exe" call "%~dp0instalar.bat" || exit /b 1
 ".venv\Scripts\python.exe" -m pip install -q -r requirements-dev.txt || goto :error
 ".venv\Scripts\python.exe" herramientas\hacer_iphone.py || goto :error
-rem Antes de armar el .exe se corren las pruebas: si algo está roto, no se arma.
+rem Antes de armar se corren las pruebas: si algo está roto, no se arma.
 call "%~dp0probar.bat" sin-pausa || goto :error
 ".venv\Scripts\python.exe" herramientas\iconos.py || goto :error
+".venv\Scripts\python.exe" -c "import version; print(version.VERSION)" > "%TEMP%\control-celular-version.txt" || goto :error
+set /p VERSION=<"%TEMP%\control-celular-version.txt"
+echo   Versión: %VERSION%
 
-".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onefile --console ^
-  --name ControlCelular ^
-  --icon "%~dp0herramientas\icono.ico" ^
-  --add-data "%~dp0web;web" ^
-  --add-data "%~dp0terceros;terceros" ^
-  --collect-all vgamepad ^
-  --hidden-import pystray._win32 ^
-  --hidden-import bandeja ^
-  --distpath dist --workpath "%TEMP%\ControlCelular-build" --specpath "%TEMP%\ControlCelular-build" ^
-  arranque.py || goto :error
+set OPCIONES=--noconfirm --clean --console --name ControlCelular --icon "%~dp0herramientas\icono.ico" ^
+  --add-data "%~dp0web;web" --add-data "%~dp0terceros;terceros" --collect-all vgamepad ^
+  --hidden-import pystray._win32 --hidden-import bandeja ^
+  --workpath "%TEMP%\ControlCelular-build" --specpath "%TEMP%\ControlCelular-build"
 
 echo.
-echo   Listo: dist\ControlCelular.exe
+echo   1/3  Versión portátil (un solo archivo)...
+".venv\Scripts\python.exe" -m PyInstaller %OPCIONES% --onefile --distpath dist arranque.py || goto :error
+
 echo.
-pause
+echo   2/3  Versión en carpeta, para el instalador (arranca más rápido)...
+".venv\Scripts\python.exe" -m PyInstaller %OPCIONES% --onedir --distpath dist\instalable arranque.py || goto :error
+
+echo.
+echo   3/3  Instalador...
+set ISCC=
+for %%r in ("%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" "%ProgramFiles%\Inno Setup 6\ISCC.exe") do if exist %%r set ISCC=%%r
+if not defined ISCC (
+  echo   No encontré Inno Setup 6: se armó solo la versión portátil. Para el instalador, instalá Inno Setup.
+  goto :listo
+)
+%ISCC% /Q /DVersion=%VERSION% /DOrigen="%~dp0dist\instalable\ControlCelular" herramientas\instalador.iss || goto :error
+
+:listo
+echo.
+echo   Listo, en la carpeta dist:
+echo     ControlCelular-Instalar-%VERSION%.exe   (instalador)
+echo     ControlCelular.exe                      (portátil)
+echo.
+if "%1"=="" pause
 exit /b 0
 
 :error
 echo.
-echo   Algo fallo al construir. Revisa el mensaje de arriba.
-pause
+echo   Algo falló al construir. Revisá el mensaje de arriba.
+if "%1"=="" pause
 exit /b 1

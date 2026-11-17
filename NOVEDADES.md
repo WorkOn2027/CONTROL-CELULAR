@@ -1,5 +1,18 @@
 # Novedades
 
+## 1.5.0
+
+- **Instalador:** `ControlCelular-Instalar-1.5.0.exe`. Con un solo permiso de Windows deja todo listo:
+  - instala **ViGEmBus**, si falta, sin ventanas extra;
+  - abre el firewall para el programa y **saca los bloqueos** que Windows le haya puesto (por ejemplo, si se cerró
+    con «Cancelar» el cartel del firewall, el celular no podía conectarse);
+  - si la red está como «Pública», ofrece marcarla como privada;
+  - crea los íconos (escritorio y menú Inicio) y se desinstala desde «Agregar o quitar programas».
+- **Escanear y jugar:** al escanear el QR, el celular entra **directo al control**. El certificado (para instalar la
+  app y usar el giroscopio) pasa a ser opcional: menú ☰ → «Activar app y giroscopio».
+- El programa instalado arranca más rápido (ya no se descomprime cada vez).
+- Sigue estando la versión portátil `ControlCelular.exe`, que no se instala.
+
 ## 1.4.1
 
 - **ViGEmBus viene incluido:** ya no hay que bajarlo aparte. Si la PC no tiene el driver, Control Celular pregunta

@@ -26,9 +26,12 @@
   .marcas button { width: auto; margin: 0; padding: 9px 14px; font-size: 15px; background: #e4e7eb; color: #3d444d; }
   .marcas button.si { background: #3a72c4; color: #fff; }
   .guia { display: none; } .guia.si { display: block; }
+  #abriendo { display: none; text-align: center; margin-top: 30vh; font-size: 20px; }
+  body.abriendo main { display: none; } body.abriendo #abriendo { display: block; }
 </style>
 </head>
 <body>
+<div id="abriendo" data-en="Opening the controller…">Abriendo el control…</div>
 <main>
   <h1>Control Celular</h1>
   <div data-en="This is done <b>only once</b>. It's needed to install the controller as an app and to use the gyro.">Esto se hace <b>una sola vez</b>. Hace falta para que el control se pueda instalar como app y para usar el giroscopio.</div>
@@ -97,6 +100,10 @@
   const T = (es, en) => (EN ? en : es);
   // Si vino del QR, el código de emparejamiento pasa al control para que se conecte solo.
   const c = new URLSearchParams(location.search).get("c");
+  // Escanear y jugar: si el certificado no está instalado, se abre directo el control (sin app ni giroscopio).
+  // La guía del certificado es opcional: se llega desde el menú del control («Activar app y giroscopio», ?guia=1).
+  const guia = new URLSearchParams(location.search).has("guia");
+  if (!guia) document.body.classList.add("abriendo");
   const base = `https://${location.hostname}:8443/`;
   const seguro = base + (c && /^\d{4}$/.test(c) ? `?c=${c}` : "");
   document.getElementById("sinApp").href = "/index.html" + (c ? `?c=${encodeURIComponent(c)}` : "");
@@ -119,6 +126,7 @@
       estado.textContent = T("instalado ✓", "installed ✓"); estado.className = "ok";
       if (!yaFue) { yaFue = true; setTimeout(() => location.href = seguro, 800); }
     } catch (e) {
+      if (!guia && !yaFue) { yaFue = true; location.replace(document.getElementById("sinApp").href); return; }
       estado.textContent = T("todavía no está instalado", "not installed yet"); estado.className = "no";
       setTimeout(revisar, 3000);
     }

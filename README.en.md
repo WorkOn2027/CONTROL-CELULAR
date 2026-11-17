@@ -30,10 +30,19 @@ Use your **Android phone or iPhone as a game controller for your PC**. Windows, 
 
 ## Install on the PC
 
-### Easy way: download the program (recommended)
+### Easy way: the installer (recommended)
 
-1. Go to **[Releases](../../releases/latest)** and download **`ControlCelular.exe`**. It's a single file; you don't
-   need Python or anything else.
+1. Go to **[Releases](../../releases/latest)** and download **`ControlCelular-Instalar-….exe`**.
+2. Open it and click **Next → Install**. Windows asks for permission once, and the installer sets everything up:
+   it installs **ViGEmBus** if missing, opens the firewall only for Control Celular on your private home network
+   (removing any Windows block), offers to mark a "Public" network as private, and creates the icons.
+3. When it finishes, Control Celular opens and shows the QR code: **scan it with your phone and play**.
+
+To uninstall: Settings → Apps → Control Celular (it also removes the firewall rules and the autostart).
+
+### Portable: no install
+
+1. In **[Releases](../../releases/latest)** download **`ControlCelular.exe`**: a single file.
 2. Double-click it. You can keep it in any folder, even Downloads.
    - Windows may show **"Windows protected your PC"** because the program isn't signed. Tap **More info → Run
      anyway**.
@@ -65,9 +74,9 @@ forget them), version and uninstall, and exit.
 
 ### On the phone (the first time)
 
-1. **Scan the QR code** with your phone's camera.
-2. Follow that page's steps to install the **certificate** (needed for the app and the gyro). Each phone has its own
-   steps:
+1. **Scan the QR code** with your phone's camera: **you land straight on the controller** and it pairs by itself.
+2. **Optional:** to install it as an app and use the gyro, open **☰ → Enable app and gyro** and install the
+   **certificate**. Each phone has its own steps:
    - **Android:** the page detects your brand (Samsung, Xiaomi, Motorola…) and shows the exact path in Settings.
    - **iPhone:** use **Safari**. The certificate installs as a **profile**, and afterwards you must **turn on full
      trust** in Settings → General → About → Certificate Trust Settings.

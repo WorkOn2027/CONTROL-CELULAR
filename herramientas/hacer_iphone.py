@@ -42,8 +42,8 @@ CAMBIOS_CONTROL = [
     ('    <button id="pantalla">Pantalla completa</button>\n',
      '    <button id="pantalla" hidden>Pantalla completa</button>\n'
      '    <button id="agregarInicio">Agregar a inicio (iPhone)</button>\n'),
-    ('href="/configurar.html" hidden>Activar app y giroscopio</a>',
-     'href="/configurar-iphone.html" hidden>Activar app y giroscopio</a>'),
+    ('href="/configurar.html?guia=1" hidden>Activar app y giroscopio</a>',
+     'href="/configurar-iphone.html?guia=1" hidden>Activar app y giroscopio</a>'),
     # Arranque: lo propio de iPhone
     ('  traducirDOM(document.body); // inglés si el celular está en inglés (o si se eligió en ⚙ → Idioma)',
      '''  traducirDOM(document.body); // inglés si el celular está en inglés (o si se eligió en ⚙ → Idioma)
