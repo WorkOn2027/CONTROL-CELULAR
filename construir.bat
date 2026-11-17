@@ -19,7 +19,7 @@ call "%~dp0probar.bat" sin-pausa || goto :error
   --hidden-import pystray._win32 ^
   --hidden-import bandeja ^
   --distpath dist --workpath "%TEMP%\ControlCelular-build" --specpath "%TEMP%\ControlCelular-build" ^
-  server.py || goto :error
+  arranque.py || goto :error
 
 echo.
 echo   Listo: dist\ControlCelular.exe

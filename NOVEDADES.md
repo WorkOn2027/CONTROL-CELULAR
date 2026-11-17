@@ -1,5 +1,12 @@
 # Novedades
 
+## 1.4.1
+
+- **Arreglo importante:** en una PC sin el driver **ViGEmBus**, el programa se cerraba al instante sin mostrar nada.
+  Ahora avisa que falta, abre la página para descargarlo y espera a que leas el mensaje.
+- Si el programa no puede arrancar por cualquier otro motivo, muestra el error, lo guarda en `error.txt` (en
+  `%LOCALAPPDATA%\ControlCelular`) y no se cierra solo.
+
 ## 1.4.0
 
 - **Control de PS4:** un control nuevo con la forma de uno de PS4: L1/L2/R1/R2, un touchpad grande en el centro

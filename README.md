@@ -215,6 +215,7 @@ Todo se guarda para cada celular, también en la PC.
 
 | Archivo | Qué hace |
 |---|---|
+| `arranque.py` | El punto de entrada: si algo falla al arrancar (por ejemplo, falta ViGEmBus), lo explica en vez de cerrarse |
 | `server.py` | Arma todo y atiende la conexión de cada celular |
 | `mandos.py` | Los controles virtuales (Xbox 360 y DualShock 4) y la traducción de botones |
 | `celulares.py` | Celulares emparejados, sus ajustes, el código y el límite de intentos |

@@ -391,7 +391,8 @@ def soltar_todo_y_salir() -> None:
     os._exit(0)
 
 
-if __name__ == "__main__":
+def correr() -> None:
+    """Arranca el programa. Lo llama arranque.py, que muestra cualquier error en vez de cerrarse."""
     try:
         # Que los mensajes salgan al instante. Si la salida no es una ventana (va a un archivo), en UTF-8:
         # así se ven los acentos y el QR (en la ventana de Windows ya se ven siempre).
@@ -423,3 +424,7 @@ if __name__ == "__main__":
         print()
         print(T("  Error inesperado:", "  Unexpected error:"), repr(e))
         salir(1)
+
+
+if __name__ == "__main__":
+    correr()

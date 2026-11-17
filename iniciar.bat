@@ -6,5 +6,5 @@ if not exist ".venv\Scripts\python.exe" (
   echo   Primera vez: instalando lo necesario...
   call "%~dp0instalar.bat" || exit /b 1
 )
-".venv\Scripts\python.exe" -u server.py %*
+".venv\Scripts\python.exe" -u arranque.py %*
 pause
