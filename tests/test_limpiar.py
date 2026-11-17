@@ -28,9 +28,14 @@ def test_borra_solo_versiones_viejas_de_control_celular(tmp_path):
     (nuestro / "web" / "index.html").write_text("x")
     (nuestro / "terceros").mkdir()
     (nuestro / "terceros" / "ViGEmBus_1.22.0_x64_x86_arm64.exe").write_text("x")
+    viejo = temporal / "_MEI22222"  # de una portátil anterior a la 1.4.1 (sin terceros/)
+    (viejo / "web").mkdir(parents=True)
+    for nombre in ("index.html", "configurar.html", "plantillas.js"):
+        (viejo / "web" / nombre).write_text("x")
     ajeno = temporal / "_MEI99999"
     (ajeno / "web").mkdir(parents=True)
     (ajeno / "web" / "index.html").write_text("x")
+    (ajeno / "web" / "configurar.html").write_text("x")  # le falta plantillas.js: no es nuestro
     cualquiera = temporal / "OtraCarpeta"
     cualquiera.mkdir()
 
@@ -38,10 +43,10 @@ def test_borra_solo_versiones_viejas_de_control_celular(tmp_path):
                         "-Actual", str(descargas / "ControlCelular-Instalar-1.5.0.exe"),
                         "-Carpetas", f"{descargas}|{escritorio}", "-Temporal", str(temporal)],
                        capture_output=True, text=True, timeout=60)
-    assert "total: 5" in r.stdout, r.stdout + r.stderr
+    assert "total: 6" in r.stdout, r.stdout + r.stderr
     for f in se_borran:
         assert not f.exists(), f"tendría que haberse borrado: {f.name}"
-    assert not nuestro.exists()
+    assert not nuestro.exists() and not viejo.exists()
     for f in quedan:
         assert f.exists(), f"NO tendría que haberse borrado: {f.name}"
     assert ajeno.exists() and cualquiera.exists()

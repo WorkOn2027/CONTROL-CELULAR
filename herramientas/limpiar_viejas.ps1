@@ -3,8 +3,9 @@
 #  - Instaladores y versiones portátiles viejas en Descargas y en el Escritorio. SOLO estos nombres exactos:
 #      ControlCelular.exe, ControlCelular (2).exe, ControlCelular-Instalar-<versión>.exe, ControlCelular-Instalar-<versión> (2).exe
 #    Nunca borra el instalador que se está usando ahora (-Actual).
-#  - Restos temporales de la versión portátil (%TEMP%\_MEI...): solo si adentro está la página de Control Celular
-#    y el instalador de ViGEmBus, o sea, si seguro son de Control Celular. Si alguno está en uso, se deja.
+#  - Restos temporales de la versión portátil (%TEMP%\_MEI...): solo si seguro son de Control Celular: la página
+#    (web\index.html) y además el instalador de ViGEmBus (desde 1.4.1) o, en las versiones anteriores,
+#    web\configurar.html y web\plantillas.js. Si alguno está en uso, se deja.
 # No toca los ajustes ni los celulares emparejados (%LOCALAPPDATA%\ControlCelular).
 #
 # Para las pruebas se pueden pasar otras carpetas con -Carpetas y -Temporal.
@@ -39,8 +40,14 @@ foreach ($c in $Carpetas) {
 
 if ($Temporal -and (Test-Path -LiteralPath $Temporal)) {
     Get-ChildItem -LiteralPath $Temporal -Directory -Filter "_MEI*" | Where-Object {
-        (Test-Path -LiteralPath (Join-Path $_.FullName "web\index.html")) -and
-        (Get-ChildItem -LiteralPath (Join-Path $_.FullName "terceros") -Filter "ViGEmBus_*.exe")
+        $web = Join-Path $_.FullName "web"
+        (Test-Path -LiteralPath (Join-Path $web "index.html")) -and (
+            # desde la 1.4.1: trae el instalador de ViGEmBus
+            (Get-ChildItem -LiteralPath (Join-Path $_.FullName "terceros") -Filter "ViGEmBus_*.exe") -or
+            # versiones anteriores: las páginas propias de Control Celular, las tres juntas
+            ((Test-Path -LiteralPath (Join-Path $web "configurar.html")) -and
+             (Test-Path -LiteralPath (Join-Path $web "plantillas.js")))
+        )
     } | ForEach-Object {
         Remove-Item -LiteralPath $_.FullName -Recurse -Force
         if (-not (Test-Path -LiteralPath $_.FullName)) { $borrados++; Write-Output "borrado: $($_.FullName)" }
