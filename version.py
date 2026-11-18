@@ -8,7 +8,7 @@ import json
 import re
 import urllib.request
 
-VERSION = "1.6.0"
+VERSION = "1.7.0"
 REPO = "WorkOn2027/CONTROL-CELULAR"
 PAGINA_RELEASES = f"https://github.com/{REPO}/releases/latest"
 

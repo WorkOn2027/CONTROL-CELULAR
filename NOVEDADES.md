@@ -1,5 +1,11 @@
 # Novedades
 
+## 1.7.0
+
+- **Animación de arranque nueva: «tu celular ahora es tu control».** Sobre un fondo negro aparece un celular
+  parado, gira hasta quedar acostado, se le prende la pantalla y aparece el control de neón. Se ve nítida
+  también en pantallas escaladas (125 %, 150 %…).
+
 ## 1.6.0
 
 - **Ventana nueva en la PC:** en lugar de la ventana negra de texto, una ventana propia con el QR, el código, los
