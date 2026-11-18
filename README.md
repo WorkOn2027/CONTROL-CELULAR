@@ -35,8 +35,8 @@ Usá tu celular Android o tu iPhone como **control de juegos para la PC**. Windo
 1. Entrá a **[Releases](../../releases/latest)** y descargá **`ControlCelular-Instalar-….exe`**.
 2. Abrilo y tocá **Siguiente → Instalar**. Windows pide permiso una sola vez, y el instalador deja todo listo:
    - instala **ViGEmBus**, el driver del control virtual, si falta;
-   - abre el firewall solo para Control Celular, en la red privada de tu casa, y saca cualquier bloqueo de Windows;
-   - si tu red está como «Pública», ofrece marcarla como privada (dejá la casilla marcada si es la red de tu casa);
+   - abre el firewall solo para Control Celular y solo para la red de tu casa (ande la red como «Privada» o como
+     «Pública»), y saca cualquier bloqueo de Windows;
    - crea el ícono en el escritorio y en el menú Inicio;
    - si ya tenías una versión anterior, la reemplaza y (casilla marcada) borra los instaladores y versiones
      portátiles viejas de Descargas y Escritorio. Tus ajustes no se tocan.
@@ -54,9 +54,8 @@ Ejecutar de todas formas**.
 2. Abrilo con doble clic. Podés dejarlo en cualquier carpeta, incluso en Descargas.
    - Windows puede mostrar **«Windows protegió su PC»**, porque el programa no está firmado. Tocá **Más información →
      Ejecutar de todas formas**.
-   - La primera vez te pregunta si querés **abrir el firewall** (solo para la red de tu casa) y, si tu red está como
-     «Pública», si querés marcarla como **privada**. Tocá **Sí**, solo si es la red de tu casa, y aceptá el
-     permiso de Windows.
+   - La primera vez te pregunta si querés **abrir el firewall** (solo para la red de tu casa). Tocá **Sí** y aceptá
+     el permiso de Windows.
    - Si falta **ViGEmBus**, el driver del control virtual, te pregunta **«¿Lo instalo ahora?»**. Tocá **Sí**,
      aceptá el permiso de Windows y tocá **Instalar** en su instalador. Viene incluido: es el instalador oficial,
      firmado por su autor. Al terminar, Control Celular se vuelve a abrir solo.
@@ -206,7 +205,9 @@ Todo se guarda para cada celular, también en la PC.
 
 | Pasa esto | Probá esto |
 |---|---|
-| El celular no abre la página | Fijate que la PC y el celular estén en la **misma red**. Cerrá y volvé a abrir Control Celular, y tocá **Sí** para abrir el firewall y marcar la red como privada. También se cambia a mano en Configuración → Red e Internet → tu red → **Privada**. |
+| El celular no abre la página | Fijate que la PC y el celular estén en la **misma red** (no la de «invitados») y apagá los datos móviles. Cerrá y volvé a abrir Control Celular y tocá **Sí** para abrir el firewall. |
+| El celular dice `ERR_CONNECTION_TIMED_OUT` | Algo bloquea la conexión entre el celular y la PC: casi siempre un **antivirus con firewall propio** (Avast, AVG, Norton, McAfee, Kaspersky, ESET…). Permití Control Celular en su firewall, o probá con el antivirus en pausa un momento para confirmarlo. Si no hay antivirus, puede ser el router: probá con el hotspot del celular. |
+| «Una directiva de Control de aplicaciones bloqueó este archivo» (código 4551) | Es el **Control inteligente de aplicaciones** de Windows 11: bloquea los programas sin firma digital y no tiene botón para abrirlos igual. Se apaga en Seguridad de Windows → Control de aplicaciones y navegador → Control inteligente de aplicaciones → **Desactivado**. Ojo: después Windows no deja volver a activarlo (salvo reinstalando Windows); la PC sigue protegida por el antivirus de Windows. |
 | «Falta el driver ViGEmBus» | Tocá **Sí** cuando el programa ofrezca instalarlo. Si preferís hacerlo a mano: [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). Si después de instalarlo sigue sin reconocerlo, reiniciá la PC. |
 | «Windows protegió su PC» | Es porque el programa no está firmado. Tocá **Más información → Ejecutar de todas formas**. Si no confiás, usá la opción con Python, que es el mismo código a la vista. |
 | El antivirus lo bloquea | Pasa a veces con programas armados con PyInstaller. Podés usar la opción con Python, o armar vos el `.exe` con `construir.bat`. |
@@ -214,7 +215,7 @@ Todo se guarda para cada celular, también en la PC.
 | La página dice «certificado todavía no está instalado» | Repetí el paso 2. Android puede pedir que tengas un bloqueo de pantalla (PIN o patrón). |
 | Cambié de red y la app no abre | La IP de la PC cambió. Abrí la dirección nueva que muestra la ventana de Control Celular (el certificado no hace falta reinstalarlo) y volvé a emparejar. |
 | El giroscopio va al revés | En ☰, activá «Invertir horizontal» o «Invertir vertical». |
-| No anda en el WiFi de un bar, la facu o un hotel | Es normal: esas redes no dejan que los equipos se vean entre sí, y por seguridad el control no abre puertos en redes públicas. Usá el hotspot de tu celular. |
+| No anda en el WiFi de un bar, la facu o un hotel | Es normal: esas redes no dejan que los equipos se vean entre sí. Usá el hotspot de tu celular. |
 | El juego no reconoce el control | Abrí `iniciar.bat` **antes** que el juego. En Steam: Configuración → Control, tiene que aparecer un «Xbox 360 Controller». |
 
 ---
@@ -234,7 +235,9 @@ Todo se guarda para cada celular, también en la PC.
 - El certificado lo crea tu propia PC la primera vez (queda en `%LOCALAPPDATA%\ControlCelular\certs`, o en `certs/`
   con la opción de Python). Está **restringido a direcciones de redes
   privadas**: aunque alguien lo robara, no serviría para hacerse pasar por ningún sitio de internet.
-- Los puertos se abren solo en redes **privadas**.
+- Los puertos se abren **solo para tu red local**: nadie de afuera (internet) puede llegar. Valen aunque Windows
+  tenga tu red como «Pública», porque así marca casi toda red nueva; en una red ajena (un bar, un hotel), alguien
+  de esa misma red podría ver la página, pero sin el código de emparejamiento no puede usar el control.
 - **No compartas** la carpeta `certs/` ni el archivo `tokens.json`: son privados de tu PC y ya están excluidos del repo.
 
 ---
@@ -250,7 +253,7 @@ Todo se guarda para cada celular, también en la PC.
 | `paginas.py` | Las páginas web y el QR |
 | `certs.py` | El certificado propio para HTTPS en la red local |
 | `steam.py` | Lee la biblioteca de Steam de la PC (juegos, tipo, portadas, juego abierto) |
-| `red.py` | Revisa el firewall y si la red es privada; si falta algo, pregunta y lo arregla con permiso de Windows |
+| `red.py` | Revisa la regla del firewall (solo red local, ande la red como privada o pública); si falta, pregunta y la crea con permiso de Windows |
 | `bandeja.py` | El ícono al lado del reloj |
 | `idioma.py`, `web/i18n.js` | El inglés, en la PC y en la página del control |
 | `version.py`, `rutas.py` | La versión y el aviso de versión nueva; dónde están los archivos (Python o `.exe`) |

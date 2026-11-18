@@ -1,5 +1,15 @@
 # Novedades
 
+## 1.7.1
+
+- **Conecta aunque Windows tenga tu red como «Pública»:** Windows marca así casi toda red nueva, y entonces el
+  celular no podía entrar (`ERR_CONNECTION_TIMED_OUT`). Ahora el firewall se abre para Control Celular sea la red
+  privada o pública, siempre **solo para tu red de casa** (nadie de internet puede llegar, y para usar el control
+  hace falta el código de emparejamiento). Ya no hace falta marcar la red como privada: el instalador dejó de
+  preguntarlo. Al actualizar, la regla vieja se reemplaza sola.
+- Ayuda nueva en «Problemas comunes» para el `ERR_CONNECTION_TIMED_OUT` (antivirus con firewall propio) y para el
+  bloqueo del «Control inteligente de aplicaciones» de Windows 11 (código 4551).
+
 ## 1.7.0
 
 - **Animación de arranque nueva: «tu celular ahora es tu control».** Sobre un fondo negro aparece un celular

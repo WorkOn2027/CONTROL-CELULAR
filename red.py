@@ -1,7 +1,9 @@
 """Revisa (y si el usuario quiere, arregla) lo que hace falta en Windows para que el celular se conecte:
+una regla de firewall que abra los puertos 8765 y 8443 SOLO para la red local (la de casa), esté la red marcada
+como «Privada» o como «Pública» (Windows marca como «Pública» casi toda red nueva, y así fallaba en muchas casas).
 
-- Una regla de firewall que abra los puertos 8765 y 8443 solo en redes privadas y solo para la red local.
-- Que la red de casa esté marcada como "Privada" (Windows marca como "Pública" cada red nueva).
+Aunque la red sea pública, nadie de afuera de tu red local puede llegar, y para usar el control hace falta el código
+de emparejamiento (que solo está en tu pantalla y tiene límite de intentos).
 
 Leer no necesita permisos. Para cambiar algo, Windows pide permiso de administrador (se abre su cartel).
 """
@@ -34,33 +36,31 @@ def _como_admin(script: str) -> bool:
 
 
 def regla_existe() -> bool:
-    n = _ps(f"(Get-NetFirewallRule -DisplayName '{REGLA}' -ErrorAction SilentlyContinue | Measure-Object).Count")
+    """Hay alguna regla de Control Celular (sirva o no para redes públicas)."""
+    n = _ps(f"(Get-NetFirewallRule -DisplayName '{REGLA}*' -ErrorAction SilentlyContinue | Measure-Object).Count")
+    return n not in ("", "0")
+
+
+def regla_sirve() -> bool:
+    """La regla de los puertos está activa y vale también en redes «Públicas» (las de antes eran solo privadas)."""
+    n = _ps(f"(Get-NetFirewallRule -DisplayName '{REGLA}' -ErrorAction SilentlyContinue | Where-Object {{ "
+            f"$_.Enabled -eq 'True' -and $_.Action -eq 'Allow' -and "
+            f"($_.Profile -eq 'Any' -or $_.Profile.ToString() -like '*Public*') }} | Measure-Object).Count")
     return n not in ("", "0")
 
 
 def crear_regla() -> bool:
+    """Crea (o reemplaza) la regla: entrada TCP 8765/8443, cualquier tipo de red, SOLO desde la red local."""
     return _como_admin(
         f"Get-NetFirewallRule -DisplayName '{REGLA}' -ErrorAction SilentlyContinue | Remove-NetFirewallRule; "
         f"New-NetFirewallRule -DisplayName '{REGLA}' -Description 'Control de juegos desde el celular (solo red "
-        f"local privada)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort {PUERTOS} -Profile Private "
+        f"local)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort {PUERTOS} -Profile Any "
         f"-RemoteAddress LocalSubnet -ErrorAction Stop | Out-Null")
 
 
 def quitar_regla() -> bool:
-    return _como_admin(f"Get-NetFirewallRule -DisplayName '{REGLA}' -ErrorAction Stop | "
+    return _como_admin(f"Get-NetFirewallRule -DisplayName '{REGLA}*' -ErrorAction Stop | "
                        f"Remove-NetFirewallRule -ErrorAction Stop")
-
-
-def redes_publicas() -> list[str]:
-    """Nombres de las redes conectadas que Windows tiene como 'Públicas'."""
-    salida = _ps("Get-NetConnectionProfile | Where-Object NetworkCategory -eq 'Public' | "
-                 "ForEach-Object { $_.Name + ' (' + $_.InterfaceAlias + ')' }")
-    return [l for l in salida.splitlines() if l.strip()]
-
-
-def hacer_privadas() -> bool:
-    return _como_admin("Get-NetConnectionProfile | Where-Object NetworkCategory -eq 'Public' | "
-                       "Set-NetConnectionProfile -NetworkCategory Private -ErrorAction Stop")
 
 
 def revisar(preguntar: bool = True) -> None:
@@ -70,41 +70,32 @@ def revisar(preguntar: bool = True) -> None:
     from dialogos import avisar
     from dialogos import preguntar as pedir_permiso
     try:
-        if not regla_existe():
+        if regla_sirve():
+            return
+        if regla_existe():  # de una versión anterior: solo servía en redes privadas
+            texto = T("  Hay que actualizar la regla del firewall de Control Celular: la de antes solo andaba si\n"
+                      "  Windows tenía tu red como «Privada» (y casi siempre la marca como «Pública»).\n"
+                      "  La nueva sigue abierta SOLO para tu red de casa.",
+                      "  Control Celular's firewall rule needs an update: the old one only worked if Windows had\n"
+                      "  your network as “Private” (and it usually marks it as “Public”).\n"
+                      "  The new one is still open ONLY to your home network.")
+        else:
             texto = T("  Para que el celular se pueda conectar hay que abrir el firewall de Windows\n"
-                      "  (solo los puertos del control, solo en redes privadas y solo para tu red de casa).",
+                      "  (solo los puertos del control y solo para tu red de casa).",
                       "  For your phone to connect, the Windows firewall needs to be opened\n"
-                      "  (only the controller's ports, only on private networks and only for your home network).")
-            if not preguntar:
-                print(texto)
-            elif pedir_permiso(texto, T("¿Lo abro ahora? Windows te va a pedir permiso.",
-                                      "Open it now? Windows will ask for permission."),
-                               T("  ¿Lo abro ahora? Windows te va a pedir permiso (S/N): ",
-                                 "  Open it now? Windows will ask for permission (Y/N): ")):
-                if crear_regla():
-                    print(T("  Listo: firewall abierto.", "  Done: firewall opened."))
-                else:
-                    avisar(T("  No se pudo abrir el firewall (¿tocaste «No» en el permiso?). "
-                             "Podés volver a abrir el programa.",
-                             "  The firewall couldn't be opened (did you tap “No”?). You can open the program again."))
-            print()
-        publicas = redes_publicas()
-        if publicas:
-            texto = (T("  Tu red está marcada como PÚBLICA, así el celular no se puede conectar:",
-                       "  Your network is marked as PUBLIC, so your phone can't connect:")
-                     + "".join(f"\n    - {r}" for r in publicas))
-            if not preguntar:
-                print(texto)
-            elif pedir_permiso(texto, T("¿Es la red de tu casa? ¿La marco como PRIVADA? Windows te va a pedir permiso.",
-                                      "Is it your home network? Mark it as PRIVATE? Windows will ask for permission."),
-                               T("  ¿Es la red de tu casa? ¿La marco como PRIVADA? (S/N): ",
-                                 "  Is it your home network? Mark it as PRIVATE? (Y/N): ")):
-                if hacer_privadas():
-                    print(T("  Listo: red marcada como privada.", "  Done: network marked as private."))
-                else:
-                    avisar(T("  No se pudo cambiar. Hacelo en Configuración > Red e Internet > tu red > Privada.",
-                             "  It couldn't be changed. Do it in Settings > Network & Internet > your network > "
-                             "Private."))
-            print()
+                      "  (only the controller's ports and only for your home network).")
+        if not preguntar:
+            print(texto)
+        elif pedir_permiso(texto, T("¿Lo hago ahora? Windows te va a pedir permiso.",
+                                    "Do it now? Windows will ask for permission."),
+                           T("  ¿Lo hago ahora? Windows te va a pedir permiso (S/N): ",
+                             "  Do it now? Windows will ask for permission (Y/N): ")):
+            if crear_regla():
+                print(T("  Listo: firewall abierto para tu red de casa.", "  Done: firewall opened for your home network."))
+            else:
+                avisar(T("  No se pudo abrir el firewall (¿tocaste «No» en el permiso?). "
+                         "Podés volver a abrir el programa.",
+                         "  The firewall couldn't be opened (did you tap “No”?). You can open the program again."))
+        print()
     except Exception as e:  # nunca impedir que arranque el control por esto
         print(T("  (No pude revisar el firewall:", "  (I couldn't check the firewall:"), e, ")")

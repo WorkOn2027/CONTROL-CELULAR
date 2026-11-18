@@ -444,8 +444,8 @@ async def main():
                 f"  (with the certificate installed, the app is at:  https://{ip}:{PUERTO_SEGURO})"))
         print(T("  El celular tiene que estar en la misma red WiFi que esta PC. Hasta 4 celulares a la vez.",
                 "  Your phone must be on the same WiFi network as this PC. Up to 4 phones at once."))
-        print(T("  ¿No conecta? Cerrá y volvé a abrir: te ofrezco abrir el firewall y marcar la red como privada.",
-                "  Can't connect? Close and reopen it: I'll offer to open the firewall and mark the network as private."))
+        print(T("  ¿No conecta? Cerrá y volvé a abrir: te ofrezco abrir el firewall (solo para tu red de casa).",
+                "  Can't connect? Close and reopen it: I'll offer to open the firewall (only for your home network)."))
         print(T("  El ícono del control, al lado del reloj, tiene el QR y más opciones.",
                 "  The controller icon next to the clock has the QR code and more options."))
         print()
@@ -493,7 +493,7 @@ def correr() -> None:
     print(f"  === CONTROL CELULAR {version.VERSION} ===")
     print()
     if os.environ.get("CONTROL_SIN_FIREWALL") != "1":
-        red.revisar(preguntar=not MINIMIZADO)  # firewall y red privada: solo pregunta si falta algo
+        red.revisar(preguntar=not MINIMIZADO)  # firewall: solo pregunta si falta (o es la regla vieja)
     crear_primer_control()
     try:
         asyncio.run(main())

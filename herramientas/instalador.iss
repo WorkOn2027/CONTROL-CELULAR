@@ -4,9 +4,9 @@
 ; Con UN solo permiso de administrador deja todo listo para escanear el QR y jugar:
 ;   - instala el programa en "Archivos de programa" (acceso directo en el escritorio y en el menú Inicio);
 ;   - instala ViGEmBus (el driver del control virtual) si falta, con su instalador oficial y sin ventanas;
-;   - abre el firewall SOLO para el programa y sus puertos, en redes privadas y solo para la red de casa,
-;     y saca los bloqueos que Windows le haya puesto (el cartel del firewall cerrado con «Cancelar»);
-;   - si la red está como «Pública», ofrece marcarla como privada (casilla, explicada).
+;   - abre el firewall SOLO para el programa y sus puertos y SOLO para la red de casa (la red local), esté la red
+;     como «Privada» o «Pública» (Windows marca casi toda red nueva como pública), y saca los bloqueos que Windows
+;     le haya puesto (el cartel del firewall cerrado con «Cancelar»).
 ; Al actualizar, reemplaza la versión anterior (borra antes sus archivos) y, si la casilla está marcada, borra
 ;   instaladores y versiones portátiles viejas de Descargas/Escritorio y restos temporales (limpiar_viejas.ps1).
 ;   Nunca borra los ajustes ni los celulares emparejados.
@@ -56,16 +56,12 @@ es.Escritorio=Crear un ícono en el escritorio
 en.Escritorio=Create a desktop icon
 es.Inicio=Abrir Control Celular al prender la PC (oculto, en el ícono al lado del reloj)
 en.Inicio=Open Control Celular when the PC starts (hidden, in the icon next to the clock)
-es.Privada=Es la red de mi casa: marcarla como privada (si no, el celular no se puede conectar)
-en.Privada=It's my home network: mark it as private (otherwise the phone can't connect)
 es.Grupo=Opciones:
 en.Grupo=Options:
 es.Driver=Instalando ViGEmBus (el control virtual)...
 en.Driver=Installing ViGEmBus (the virtual controller)...
-es.Firewall=Abriendo el firewall para Control Celular (solo red privada de casa)...
-en.Firewall=Opening the firewall for Control Celular (private home network only)...
-es.Red=Marcando la red como privada...
-en.Red=Marking the network as private...
+es.Firewall=Abriendo el firewall para Control Celular (solo para la red de casa)...
+en.Firewall=Opening the firewall for Control Celular (home network only)...
 es.Limpiar=Borrar versiones viejas que ya no sirven (instaladores y versiones portátiles anteriores en Descargas y Escritorio, y restos temporales). Tus ajustes no se tocan.
 es.Limpiando=Borrando versiones viejas...
 es.Abrir=Abrir Control Celular ahora
@@ -77,7 +73,6 @@ en.FalloDriver=ViGEmBus couldn't be installed (code %1). Control Celular will of
 
 [Tasks]
 Name: "escritorio"; Description: "{cm:Escritorio}"; GroupDescription: "{cm:Grupo}"
-Name: "privada"; Description: "{cm:Privada}"; GroupDescription: "{cm:Grupo}"; Check: HayRedPublica
 Name: "inicio"; Description: "{cm:Inicio}"; GroupDescription: "{cm:Grupo}"; Flags: unchecked
 Name: "limpiar"; Description: "{cm:Limpiar}"; GroupDescription: "{cm:Grupo}"
 
@@ -116,18 +111,6 @@ begin
   Result := not RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\ViGEmBus');
 end;
 
-function HayRedPublica: Boolean;
-var
-  Codigo: Integer;
-begin
-  { powershell termina con 1 si alguna red conectada está como "Pública" }
-  if Exec('powershell.exe', '-NoProfile -Command "if (Get-NetConnectionProfile | Where-Object NetworkCategory -eq ''Public'') { exit 1 } else { exit 0 }"',
-          '', SW_HIDE, ewWaitUntilTerminated, Codigo) then
-    Result := (Codigo = 1)
-  else
-    Result := False;
-end;
-
 procedure CorrerPowerShell(const Orden: String);
 var
   Codigo: Integer;
@@ -157,14 +140,15 @@ begin
     end;
   end;
 
-  { 2. Firewall: sacar bloqueos viejos y abrir solo lo necesario (redes privadas, solo la red de casa) }
+  { 2. Firewall: sacar bloqueos y reglas viejas (las de antes eran solo para redes privadas) y abrir solo lo
+       necesario, solo para la red de casa (LocalSubnet), sea la red «Privada» o «Pública» }
   WizardForm.StatusLabel.Caption := CustomMessage('Firewall');
   Programa := ExpandConstant('{app}\{#Exe}');
   CorrerPowerShell(
     'Get-NetFirewallApplicationFilter | Where-Object { $_.Program -like ''*ControlCelular*'' } | Get-NetFirewallRule | Where-Object Action -eq ''Block'' | Remove-NetFirewallRule; ' +
     'Get-NetFirewallRule -DisplayName ''CONTROL CELULAR*'' -ErrorAction SilentlyContinue | Remove-NetFirewallRule; ' +
-    'New-NetFirewallRule -DisplayName ''CONTROL CELULAR'' -Description ''Control de juegos desde el celular (solo red local privada)'' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8765,8443 -Profile Private -RemoteAddress LocalSubnet | Out-Null; ' +
-    'New-NetFirewallRule -DisplayName ''CONTROL CELULAR (programa)'' -Description ''Control de juegos desde el celular (solo red local privada)'' -Direction Inbound -Action Allow -Program ''' + Programa + ''' -Profile Private -RemoteAddress LocalSubnet | Out-Null');
+    'New-NetFirewallRule -DisplayName ''CONTROL CELULAR'' -Description ''Control de juegos desde el celular (solo red local)'' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8765,8443 -Profile Any -RemoteAddress LocalSubnet | Out-Null; ' +
+    'New-NetFirewallRule -DisplayName ''CONTROL CELULAR (programa)'' -Description ''Control de juegos desde el celular (solo red local)'' -Direction Inbound -Action Allow -Program ''' + Programa + ''' -Profile Any -RemoteAddress LocalSubnet | Out-Null');
 
   { 3. Versiones viejas, solo si la casilla está marcada (nunca el instalador que se está usando) }
   if WizardIsTaskSelected('limpiar') then
@@ -172,13 +156,6 @@ begin
     WizardForm.StatusLabel.Caption := CustomMessage('Limpiando');
     Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{tmp}\limpiar_viejas.ps1') +
          '" -Actual "' + ExpandConstant('{srcexe}') + '"', '', SW_HIDE, ewWaitUntilTerminated, Codigo);
-  end;
-
-  { 4. Red privada, solo si la persona marcó la casilla }
-  if WizardIsTaskSelected('privada') then
-  begin
-    WizardForm.StatusLabel.Caption := CustomMessage('Red');
-    CorrerPowerShell('Get-NetConnectionProfile | Where-Object NetworkCategory -eq ''Public'' | Set-NetConnectionProfile -NetworkCategory Private');
   end;
 end;
 

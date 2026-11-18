@@ -34,8 +34,8 @@ Use your **Android phone or iPhone as a game controller for your PC**. Windows, 
 
 1. Go to **[Releases](../../releases/latest)** and download **`ControlCelular-Instalar-….exe`**.
 2. Open it and click **Next → Install**. Windows asks for permission once, and the installer sets everything up:
-   it installs **ViGEmBus** if missing, opens the firewall only for Control Celular on your private home network
-   (removing any Windows block), offers to mark a "Public" network as private, and creates the icons. If you had an older version, it
+   it installs **ViGEmBus** if missing, opens the firewall only for Control Celular and only for your home network
+   (whether Windows has it as "Private" or "Public"), removes any Windows block, and creates the icons. If you had an older version, it
    replaces it and (checkbox on by default) deletes old installers and portable versions from Downloads and
    Desktop. Your settings are kept.
 3. When it finishes, Control Celular opens and shows the QR code: **scan it with your phone and play**.
@@ -48,9 +48,8 @@ To uninstall: Settings → Apps → Control Celular (it also removes the firewal
 2. Double-click it. You can keep it in any folder, even Downloads.
    - Windows may show **"Windows protected your PC"** because the program isn't signed. Tap **More info → Run
      anyway**.
-   - The first time, it asks whether to **open the firewall** (only for your home network) and, if your network is
-     "Public", whether to mark it as **private**. Click **Yes**, only if it's your home network, and accept Windows'
-     prompt.
+   - The first time, it asks whether to **open the firewall** (only for your home network). Click **Yes** and accept
+     Windows' prompt.
    - If **ViGEmBus** (the virtual controller driver) is missing, it asks **"Install it now?"**. Click **Yes**, accept
      Windows' prompt and click **Install** in its installer. It's included: the official installer, signed by its
      author. When it finishes, Control Celular opens again by itself.
@@ -135,11 +134,13 @@ Everything is saved per phone, on the PC too: if the PC's IP changes or you rein
 
 | Problem | Try this |
 |---|---|
-| The phone can't open the page | Make sure the PC and the phone are on the **same network**. Close and reopen Control Celular and click **Yes** to open the firewall and mark the network as private. |
+| The phone can't open the page | Make sure the PC and the phone are on the **same network**. Close and reopen Control Celular and click **Yes** to open the firewall. |
+| The phone says `ERR_CONNECTION_TIMED_OUT` | Something blocks the connection between phone and PC: usually an **antivirus with its own firewall** (Avast, AVG, Norton, McAfee, Kaspersky, ESET…). Allow Control Celular in it, or briefly pause it to confirm. With no antivirus, it may be the router: try your phone's hotspot. |
+| "An Application Control policy has blocked this file" (code 4551) | It's Windows 11 **Smart App Control**: it blocks unsigned programs with no way to run them anyway. Turn it off in Windows Security → App & browser control → Smart App Control → **Off**. Note: Windows won't let you turn it back on (unless you reinstall Windows); the PC stays protected by Microsoft Defender. |
 | "ViGEmBus driver is missing" | Click **Yes** when the program offers to install it, or do it manually from [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). If it still isn't detected, restart your PC. |
 | "Windows protected your PC" | The program isn't signed. Tap **More info → Run anyway**, or use the Python option. |
 | The certificate isn't detected (iPhone) | Check you used **Safari** and turned on **full trust** (Settings → General → About → Certificate Trust Settings). |
-| It doesn't work on café, university or hotel WiFi | Those networks don't let devices see each other, and the controller doesn't open ports on public networks on purpose. Use your phone's hotspot. |
+| It doesn't work on café, university or hotel WiFi | Those networks don't let devices see each other. Use your phone's hotspot. |
 | The game doesn't detect the controller | Open Control Celular **before** the game. In Steam: Settings → Controller. |
 
 ---
