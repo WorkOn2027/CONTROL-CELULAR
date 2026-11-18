@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import re
+import shutil
 import ssl
 import subprocess
 import sys
@@ -52,6 +53,7 @@ def servidor():
     yield {"codigo": codigo, "ssl": ctx, "datos": datos}
     proc.kill()
     proc.wait(10)
+    shutil.rmtree(datos, ignore_errors=True)
 
 
 def correr(corrutina):
@@ -165,3 +167,30 @@ def test_biblioteca_qr_y_certificado(servidor):
     status, html = get(f"http://127.0.0.1:{PUERTO}/qr")  # desde la misma PC, sí
     assert status == 200 and servidor["codigo"] in html
     assert get(f"http://127.0.0.1:{PUERTO}/ca.crt")[0] == 200
+
+
+def test_ventana_de_la_pc(servidor):
+    """La ventana (panel): solo desde esta PC, por HTTP y con la clave; muestra los jugadores conectados."""
+    clave = json.loads((servidor["datos"] / "panel.clave").read_text("utf-8"))["clave"]
+    base = f"http://127.0.0.1:{PUERTO}/panel"
+    status, html = get(base)
+    assert status == 200 and "Control Celular" in html
+    assert get(f"{base}/estado")[0] == 403                      # sin clave, no
+    assert get(f"{base}/estado?k=otra-clave")[0] == 403         # con otra clave, tampoco
+    assert get(f"https://127.0.0.1:{PUERTO_SEGURO}/panel/estado?k={clave}", ctx=servidor["ssl"])[0] == 403
+    status, cuerpo = get(f"{base}/estado?k={clave}")
+    e = json.loads(cuerpo)
+    assert status == 200 and e["codigo"] == servidor["codigo"] and len(e["jugadores"]) == 4
+
+    async def con_un_celular():
+        ws, _ = await entrar(servidor, servidor["codigo"])
+        await ws.send("d Celular de prueba")
+        await asyncio.sleep(.3)
+        estado = json.loads(get(f"{base}/estado?k={clave}")[1])
+        await ws.close()
+        return estado
+
+    e = correr(con_un_celular())
+    assert any(j.get("nombre") == "Celular de prueba" for j in e["jugadores"])
+    assert any("conectado" in a["texto"] or "connected" in a["texto"] for a in e["actividad"])
+    assert json.loads(get(f"{base}/accion?k={clave}&que=no-existe")[1]) == {"ok": False}

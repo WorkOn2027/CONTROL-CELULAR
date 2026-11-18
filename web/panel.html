@@ -1,0 +1,547 @@
+<!doctype html>
+<!-- La ventana de Control Celular en la PC (la abre panel.py). Solo se sirve a esta misma PC; los datos piden la clave. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Control Celular</title>
+<link rel="icon" href="/icono-192.png">
+<meta name="color-scheme" content="dark">
+<style>
+  :root {
+    --fondo: #0c1014; --fondo2: #11161b; --tarjeta: #151b21; --tarjeta2: #1a2128; --borde: #232c35; --borde2: #2f3a45;
+    --texto: #e8eef4; --suave: #93a0ad; --tenue: #5f6b77;
+    --celeste: #28afff; --verde: #3cf07d; --violeta: #a77bff; --naranja: #ffa63c; --rojo: #ff5d6c;
+    --grad: linear-gradient(90deg, var(--celeste), var(--verde));
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; color: var(--texto); overflow: hidden; user-select: none; -webkit-user-select: none;
+    font: 14px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(900px 520px at 8% -12%, #132433 0, transparent 60%),
+      radial-gradient(800px 480px at 105% 112%, #10261a 0, transparent 58%),
+      var(--fondo);
+  }
+  .app { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; padding: 18px 22px 12px; gap: 16px; }
+
+  /* Encabezado */
+  header { display: flex; align-items: center; gap: 12px; }
+  header img { width: 42px; height: 42px; border-radius: 11px; box-shadow: 0 0 22px -6px #28afff88; }
+  h1 { margin: 0; font: 600 19px "Segoe UI Variable Display", "Segoe UI", sans-serif; letter-spacing: .2px; }
+  .ver { color: var(--tenue); font-size: 12px; }
+  .estado {
+    margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+    background: var(--tarjeta); border: 1px solid var(--borde); color: var(--suave); font-size: 13px;
+  }
+  .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--celeste); animation: latido 1.8s ease-in-out infinite; }
+  .estado.ok { color: var(--texto); }
+  .estado.ok .punto { background: var(--verde); box-shadow: 0 0 10px var(--verde); animation: none; }
+  .estado.mal .punto { background: var(--naranja); animation: none; }
+  @keyframes latido { 50% { opacity: .3; } }
+  .icono-btn {
+    width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--borde); background: var(--tarjeta);
+    color: var(--suave); display: grid; place-items: center; cursor: pointer; transition: color .15s, border-color .15s;
+  }
+  .icono-btn:hover { color: var(--texto); border-color: var(--borde2); }
+  .icono-btn.aviso { position: relative; }
+  .icono-btn.aviso::after {
+    content: ""; position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--verde); box-shadow: 0 0 8px var(--verde);
+  }
+
+  /* Cuerpo */
+  main { display: grid; grid-template-columns: minmax(300px, 350px) 1fr; gap: 16px; min-height: 0; }
+  .tarjeta {
+    background: linear-gradient(180deg, var(--tarjeta2), var(--tarjeta)); border: 1px solid var(--borde);
+    border-radius: 18px; padding: 18px; min-height: 0;
+  }
+  h2 {
+    margin: 0 0 12px; font: 600 12px "Segoe UI", sans-serif; color: var(--suave);
+    text-transform: uppercase; letter-spacing: .09em; display: flex; align-items: center; gap: 8px;
+  }
+  h2 .cuenta { color: var(--tenue); font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+  .conectar { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; overflow: auto; }
+  .conectar h2 { align-self: stretch; }
+  .qr {
+    position: relative; width: 100%; max-width: 250px; aspect-ratio: 1; padding: 10px; border-radius: 16px; background: #fff;
+    box-shadow: 0 0 0 1px #ffffff14, 0 0 44px -12px #28afffaa, 0 0 70px -24px #3cf07d99;
+  }
+  .qr img { width: 100%; height: 100%; display: block; }
+  .qr .sin-red {
+    position: absolute; inset: 0; display: none; place-items: center; padding: 22px; border-radius: 16px;
+    background: #151b21f2; color: var(--texto); font-size: 13.5px;
+  }
+  .qr.sin-red-on .sin-red { display: grid; }
+  .ayuda { color: var(--suave); font-size: 13.5px; margin: -2px 0 0; }
+  .codigo-caja { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .etiqueta { color: var(--tenue); font-size: 12px; }
+  .codigo { display: flex; gap: 8px; }
+  .codigo span {
+    width: 44px; height: 54px; border-radius: 12px; background: var(--fondo2); border: 1px solid var(--borde);
+    display: grid; place-items: center; font: 600 26px "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  }
+  .direccion {
+    display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 5px 5px 12px;
+    background: var(--fondo2); border: 1px solid var(--borde); border-radius: 11px;
+  }
+  .direccion code {
+    flex: 1; text-align: left; font: 13px "Cascadia Mono", Consolas, monospace; color: var(--suave);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; user-select: text; -webkit-user-select: text;
+  }
+  .nota { color: var(--tenue); font-size: 12.5px; }
+
+  button { font: inherit; }
+  .btn {
+    border: 1px solid var(--borde); background: var(--tarjeta2); color: var(--texto); border-radius: 9px;
+    padding: 6px 12px; cursor: pointer; transition: border-color .15s, background .15s; white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--borde2); background: #202831; }
+  .btn.chico { padding: 4px 10px; font-size: 12.5px; color: var(--suave); }
+  .btn.chico:hover { color: var(--texto); }
+  .btn.peligro { color: var(--rojo); }
+  .btn.peligro:hover { border-color: #ff5d6c66; }
+  .btn.primario { background: var(--grad); color: #05140c; border: 0; font-weight: 600; }
+  .btn.primario:hover { filter: brightness(1.08); }
+
+  .columna { display: grid; grid-template-rows: auto auto 1fr; gap: 16px; min-height: 0; }
+  .jugadores { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .lugar {
+    --c: var(--celeste); display: flex; align-items: center; gap: 12px; padding: 12px; min-height: 68px;
+    border-radius: 13px; background: var(--fondo2); border: 1px dashed #29323c; transition: border-color .3s, box-shadow .3s;
+  }
+  .lugar .num {
+    width: 40px; height: 40px; flex: none; border-radius: 11px; display: grid; place-items: center;
+    font-weight: 700; color: var(--tenue); border: 1px solid #29323c; transition: all .3s;
+  }
+  .lugar .txt { min-width: 0; }
+  .lugar .nombre { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lugar .detalle { color: var(--tenue); font-size: 12.5px; }
+  .lugar.on { border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); box-shadow: 0 0 22px -10px var(--c); }
+  .lugar.on .num { color: #091015; background: var(--c); border-color: transparent; box-shadow: 0 0 16px -3px var(--c); }
+  .lugar.on .detalle { color: var(--suave); }
+  .chip {
+    display: inline-block; margin-left: 4px; padding: 0 8px; border-radius: 999px; font-size: 11.5px;
+    border: 1px solid var(--borde2); color: var(--suave); vertical-align: 1px;
+  }
+
+  .juego {
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 13px;
+    background: var(--fondo2); border: 1px solid var(--borde); color: var(--suave);
+  }
+  .juego b { color: var(--texto); font-weight: 600; }
+  .juego svg { color: var(--verde); flex: none; }
+  .juego.nada svg { color: var(--tenue); }
+
+  .abajo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 0; }
+  .abajo .tarjeta { display: flex; flex-direction: column; }
+  .lista { display: flex; flex-direction: column; gap: 6px; overflow: auto; min-height: 0; margin: 0 -6px; padding: 0 6px; }
+  .fila {
+    display: flex; align-items: center; gap: 11px; padding: 8px 8px 8px 10px; border-radius: 11px;
+    background: var(--fondo2); border: 1px solid transparent;
+  }
+  .fila:hover { border-color: var(--borde); }
+  .fila svg { color: var(--suave); flex: none; }
+  .fila .txt { flex: 1; min-width: 0; }
+  .fila .txt div:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fila .cuando { color: var(--tenue); font-size: 12px; }
+  .fila .cuando.ahora { color: var(--verde); }
+  .vacio { color: var(--tenue); font-size: 13px; padding: 10px 2px; }
+  .actividad .linea { display: flex; gap: 10px; padding: 4px 2px; font-size: 12.5px; color: var(--suave); border-bottom: 1px solid #ffffff06; }
+  .actividad .hora { color: var(--tenue); font-variant-numeric: tabular-nums; flex: none; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #27313b; border-radius: 8px; }
+
+  footer { color: var(--tenue); font-size: 12px; display: flex; align-items: center; gap: 7px; }
+
+  /* Ventanitas */
+  .velo {
+    position: fixed; inset: 0; display: none; place-items: center; padding: 20px;
+    background: #05080bcc; backdrop-filter: blur(5px); z-index: 5;
+  }
+  .velo.ver { display: grid; animation: aparecer .15s ease-out; }
+  @keyframes aparecer { from { opacity: 0; } }
+  .dialogo {
+    width: min(460px, 100%); background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 18px;
+    padding: 22px; box-shadow: 0 24px 70px #000b;
+  }
+  .dialogo h3 { margin: 0 0 6px; font: 600 17px "Segoe UI Variable Display", "Segoe UI", sans-serif; }
+  .dialogo p { margin: 0 0 4px; color: var(--suave); }
+  .botones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .opcion { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--borde); }
+  .dialogo, .dialogo h3, .opcion .txt > div:first-child, .apagar .txt > div:first-child { color: var(--texto); }
+  .opcion .txt { flex: 1; }
+  .opcion .txt > div:first-child, .apagar .txt > div:first-child { font-weight: 500; }
+  .sub { color: var(--tenue); font-size: 12.5px; }
+  .interruptor {
+    appearance: none; -webkit-appearance: none; margin: 0; width: 44px; height: 24px; flex: none; cursor: pointer;
+    border-radius: 999px; background: #2a343e; position: relative;
+  }
+  .interruptor::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+    background: #cbd5de;
+  }
+  .interruptor.tocado, .interruptor.tocado::after { transition: all .2s; }  /* animar solo al tocarlo */
+  .interruptor:checked { background: var(--grad); }
+  .interruptor:checked::after { left: 23px; background: #fff; }
+  .nueva {
+    display: none; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border-radius: 12px;
+    background: #3cf07d14; border: 1px solid #3cf07d44;
+  }
+  .nueva.ver { display: flex; }
+  .nueva .txt { flex: 1; }
+  .apagar { display: flex; align-items: center; gap: 14px; padding-top: 14px; }
+  .apagar .txt { flex: 1; }
+  .aviso-flotante {
+    position: fixed; left: 50%; bottom: 46px; transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+    padding: 8px 16px; border-radius: 999px; background: #1f2830; border: 1px solid var(--borde2); transition: all .2s;
+  }
+  .aviso-flotante.ver { opacity: 1; transform: translate(-50%, 0); }
+  #apagado .dialogo { text-align: center; }
+
+  @media (max-width: 860px) {
+    body { overflow: auto; }
+    .app { height: auto; min-height: 100vh; }
+    main, .abajo { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <img src="/icono-192.png" alt="">
+    <div>
+      <h1>Control Celular</h1>
+      <div class="ver" id="version"></div>
+    </div>
+    <div class="estado" id="estado"><span class="punto"></span><span id="estadoTexto" data-t>Esperando un celular</span></div>
+    <button class="icono-btn" id="abrirOpciones" title="Opciones" aria-label="Opciones">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section class="tarjeta conectar">
+      <h2 data-t>Conectá un celular</h2>
+      <div class="qr" id="qr">
+        <img id="qrImg" alt="QR">
+        <div class="sin-red" data-t>Esta PC no está conectada a ninguna red. Conectala al WiFi de tu casa (o por cable al router).</div>
+      </div>
+      <p class="ayuda" data-t>Escaneá el QR con la cámara del celular y listo.</p>
+      <div class="codigo-caja">
+        <span class="etiqueta" data-t>O entrá a esta dirección y poné el código</span>
+        <div class="codigo" id="codigo"></div>
+      </div>
+      <div class="direccion">
+        <code id="direccion"></code>
+        <button class="btn chico" id="copiar" data-t>Copiar</button>
+      </div>
+      <div class="nota" data-t>El celular tiene que estar en el mismo WiFi que esta PC. Hasta 4 celulares a la vez.</div>
+    </section>
+
+    <section class="columna">
+      <div class="tarjeta">
+        <h2><span data-t>Jugadores</span> <span class="cuenta" id="cuentaJugadores"></span></h2>
+        <div class="jugadores" id="jugadores"></div>
+      </div>
+      <div class="juego nada" id="juego">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6l-.7 6.2A3 3 0 0 0 5 18c1 0 1.7-.5 2.2-1.2l1-1.6a2 2 0 0 1 1.7-.9h4.2a2 2 0 0 1 1.7.9l1 1.6c.5.7 1.3 1.2 2.2 1.2a3 3 0 0 0 3-3.2l-.7-6.2a4 4 0 0 0-4-3.6z"/></svg>
+        <span id="juegoTexto"></span>
+      </div>
+      <div class="abajo">
+        <div class="tarjeta">
+          <h2 data-t>Celulares emparejados</h2>
+          <div class="lista" id="celulares"></div>
+        </div>
+        <div class="tarjeta">
+          <h2 data-t>Actividad</h2>
+          <div class="lista actividad" id="actividad"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+    <span data-t>Si cerrás esta ventana, Control Celular sigue funcionando en el ícono al lado del reloj.</span>
+  </footer>
+</div>
+
+<!-- Opciones -->
+<div class="velo" id="opciones">
+  <div class="dialogo">
+    <h3 data-t>Opciones</h3>
+    <label class="opcion">
+      <div class="txt"><div data-t>Abrir al prender la PC</div><div class="sub" data-t>Arranca oculto, en el ícono al lado del reloj.</div></div>
+      <input type="checkbox" class="interruptor" id="optInicio">
+    </label>
+    <label class="opcion">
+      <div class="txt"><div data-t>Avisarme si hay una versión nueva</div><div class="sub" data-t>Solo mira la página de descargas del proyecto.</div></div>
+      <input type="checkbox" class="interruptor" id="optVersiones">
+    </label>
+    <div class="nueva" id="nueva">
+      <div class="txt"><b id="nuevaTexto"></b><div class="sub" data-t>Bajá el instalador nuevo: reemplaza a este y conserva todo.</div></div>
+      <button class="btn primario" id="descargar" data-t>Descargar</button>
+    </div>
+    <div class="apagar">
+      <div class="txt"><div data-t>Apagar Control Celular</div><div class="sub" data-t>Los celulares se desconectan hasta que lo vuelvas a abrir.</div></div>
+      <button class="btn peligro" id="apagar" data-t>Apagar</button>
+    </div>
+    <div class="botones"><button class="btn" id="cerrarOpciones" data-t>Listo</button></div>
+  </div>
+</div>
+
+<!-- Confirmar -->
+<div class="velo" id="confirmar">
+  <div class="dialogo">
+    <h3 id="confTitulo"></h3>
+    <p id="confTexto"></p>
+    <div class="botones">
+      <button class="btn" id="confNo" data-t>Cancelar</button>
+      <button class="btn peligro" id="confSi"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Programa apagado -->
+<div class="velo" id="apagado">
+  <div class="dialogo">
+    <h3 data-t>Control Celular está apagado</h3>
+    <p data-t>Para volver a usarlo, abrilo desde el ícono del escritorio o del menú Inicio.</p>
+  </div>
+</div>
+
+<div class="aviso-flotante" id="avisoFlotante"></div>
+
+<script>
+"use strict";
+const K = new URLSearchParams(location.search).get("k") || "";
+const $ = (id) => document.getElementById(id);
+const COLORES = ["var(--celeste)", "var(--verde)", "var(--violeta)", "var(--naranja)"];
+let idioma = "es";
+let estado = null;
+let fallas = 0;
+let tocadoHasta = 0;
+const pintado = {};  // para no redibujar lo que no cambió
+
+const EN = {
+  "Esperando un celular": "Waiting for a phone",
+  "Opciones": "Options",
+  "Conectá un celular": "Connect a phone",
+  "Esta PC no está conectada a ninguna red. Conectala al WiFi de tu casa (o por cable al router).":
+    "This PC isn't connected to any network. Connect it to your home WiFi (or by cable to the router).",
+  "Escaneá el QR con la cámara del celular y listo.": "Scan the QR code with your phone's camera and you're set.",
+  "O entrá a esta dirección y poné el código": "Or open this address and enter the code",
+  "Copiar": "Copy",
+  "Copiado": "Copied",
+  "El celular tiene que estar en el mismo WiFi que esta PC. Hasta 4 celulares a la vez.":
+    "Your phone must be on the same WiFi as this PC. Up to 4 phones at once.",
+  "Jugadores": "Players",
+  "Celulares emparejados": "Paired phones",
+  "Actividad": "Activity",
+  "Si cerrás esta ventana, Control Celular sigue funcionando en el ícono al lado del reloj.":
+    "If you close this window, Control Celular keeps running in the icon next to the clock.",
+  "Abrir al prender la PC": "Open when the PC starts",
+  "Arranca oculto, en el ícono al lado del reloj.": "Starts hidden, in the icon next to the clock.",
+  "Avisarme si hay una versión nueva": "Tell me when there's a new version",
+  "Solo mira la página de descargas del proyecto.": "It only checks the project's downloads page.",
+  "Bajá el instalador nuevo: reemplaza a este y conserva todo.": "Get the new installer: it replaces this one and keeps everything.",
+  "Descargar": "Download",
+  "Apagar Control Celular": "Turn off Control Celular",
+  "Los celulares se desconectan hasta que lo vuelvas a abrir.": "Phones disconnect until you open it again.",
+  "Apagar": "Turn off",
+  "Listo": "Done",
+  "Cancelar": "Cancel",
+  "Control Celular está apagado": "Control Celular is off",
+  "Para volver a usarlo, abrilo desde el ícono del escritorio o del menú Inicio.":
+    "To use it again, open it from the desktop or Start menu icon.",
+  "Libre": "Free",
+  "Escaneá el QR para sumarte": "Scan the QR code to join",
+  "Jugador": "Player",
+  "Olvidar": "Forget",
+  "Olvidar todos": "Forget all",
+  "conectado ahora": "connected now",
+  "sin usar todavía": "not used yet",
+  "usado hace un rato": "used a moment ago",
+  "Todavía no hay celulares emparejados. Escaneá el QR para empezar.": "No paired phones yet. Scan the QR code to start.",
+  "Sin novedades por ahora.": "Nothing new yet.",
+  "Ningún juego de Steam abierto": "No Steam game open",
+  "Jugando ahora:": "Playing now:",
+  "juegos en la biblioteca de Steam": "games in your Steam library",
+  "¿Olvidar este celular?": "Forget this phone?",
+  "¿Olvidar todos los celulares?": "Forget all phones?",
+  "Pierde el permiso para conectarse y sus ajustes guardados en la PC. Para volver a usarlo hay que escanear el QR de nuevo.":
+    "It loses permission to connect and its settings saved on the PC. To use it again, scan the QR code again.",
+  "Todos pierden el permiso para conectarse y sus ajustes guardados en la PC. Para volver a usarlos hay que escanear el QR de nuevo.":
+    "They all lose permission to connect and their settings saved on the PC. To use them again, scan the QR code again.",
+  "¿Apagar Control Celular?": "Turn off Control Celular?",
+  "Los celulares se desconectan y se sueltan todos los botones.": "Phones disconnect and every button is released.",
+  "Sin red": "No network",
+};
+const tr = (s) => (idioma === "en" && EN[s]) || s;
+function traducir() {
+  document.documentElement.lang = idioma;
+  document.querySelectorAll("[data-t]").forEach((e) => {
+    if (e.dataset.es === undefined) e.dataset.es = e.textContent.trim();
+    e.textContent = tr(e.dataset.es);
+  });
+  $("abrirOpciones").title = tr("Opciones");
+}
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+function hace(visto) {
+  if (!visto) return tr("sin usar todavía");
+  const s = Date.now() / 1000 - visto;
+  if (s < 3600) return tr("usado hace un rato");
+  if (s < 86400) { const h = Math.floor(s / 3600); return idioma === "en" ? `used ${h} h ago` : `usado hace ${h} h`; }
+  const d = Math.floor(s / 86400);
+  return idioma === "en" ? `used ${d} day${d > 1 ? "s" : ""} ago` : `usado hace ${d} día${d > 1 ? "s" : ""}`;
+}
+
+async function pedir(ruta, extra = "") {
+  const r = await fetch(`/panel/${ruta}?k=${encodeURIComponent(K)}${extra}`, { cache: "no-store" });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+const accion = (que, extra = "") => pedir("accion", `&que=${que}${extra}`).catch(() => {}).then(actualizar);
+
+function cambio(clave, valor) {
+  const s = JSON.stringify(valor);
+  if (pintado[clave] === s) return false;
+  pintado[clave] = s;
+  return true;
+}
+
+const ICONO_CELULAR = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18h2"/></svg>';
+
+function pintar(e) {
+  estado = e;
+  if (e.idioma !== idioma) { idioma = e.idioma; traducir(); for (const k in pintado) delete pintado[k]; }
+  $("version").textContent = (idioma === "en" ? "Version " : "Versión ") + e.version;
+
+  const conectados = e.jugadores.filter((j) => j.nombre);
+  const pill = $("estado");
+  pill.className = "estado" + (e.sinRed ? " mal" : conectados.length ? " ok" : "");
+  $("estadoTexto").textContent = e.sinRed ? tr("Sin red")
+    : !conectados.length ? tr("Esperando un celular")
+    : idioma === "en" ? `${conectados.length} player${conectados.length > 1 ? "s" : ""} connected`
+    : `${conectados.length} jugador${conectados.length > 1 ? "es" : ""} conectado${conectados.length > 1 ? "s" : ""}`;
+
+  if (cambio("qr", [e.codigo, e.ip])) $("qrImg").src = `/qr.svg?c=${e.codigo}&ip=${e.ip}`;
+  $("qr").classList.toggle("sin-red-on", e.sinRed);
+  if (cambio("codigo", e.codigo)) $("codigo").innerHTML = [...e.codigo].map((d) => `<span>${esc(d)}</span>`).join("");
+  $("direccion").textContent = e.direccion;
+
+  if (cambio("jugadores", e.jugadores)) {
+    $("cuentaJugadores").textContent = `${conectados.length}/4`;
+    $("jugadores").innerHTML = e.jugadores.map((j, i) => j.nombre
+      ? `<div class="lugar on" style="--c:${COLORES[i]}"><div class="num">${j.numero}</div><div class="txt">
+           <div class="nombre">${esc(j.nombre)}</div>
+           <div class="detalle">${tr("Jugador")} ${j.numero}<span class="chip">${j.mando === "ds4" ? "DualShock 4" : "Xbox 360"}</span></div></div></div>`
+      : `<div class="lugar"><div class="num">${j.numero}</div><div class="txt">
+           <div class="nombre" style="color:var(--suave);font-weight:500">${tr("Libre")}</div>
+           <div class="detalle">${tr("Escaneá el QR para sumarte")}</div></div></div>`).join("");
+  }
+
+  const juego = $("juego");
+  juego.classList.toggle("nada", !e.juego);
+  $("juegoTexto").innerHTML = e.juego ? `${tr("Jugando ahora:")} <b>${esc(e.juego)}</b>`
+    : `${tr("Ningún juego de Steam abierto")}${e.juegosSteam ? ` · ${e.juegosSteam} ${tr("juegos en la biblioteca de Steam")}` : ""}`;
+
+  if (cambio("celulares", [e.celulares, Math.floor(Date.now() / 60000)])) {
+    $("celulares").innerHTML = !e.celulares.length
+      ? `<div class="vacio">${tr("Todavía no hay celulares emparejados. Escaneá el QR para empezar.")}</div>`
+      : e.celulares.map((c) => `<div class="fila">${ICONO_CELULAR}<div class="txt"><div>${esc(c.nombre)}</div>
+          <div class="cuando ${c.conectado ? "ahora" : ""}">${c.conectado ? tr("conectado ahora") : hace(c.visto)}</div></div>
+          <button class="btn chico" data-olvidar="${esc(c.id)}" data-nombre="${esc(c.nombre)}">${tr("Olvidar")}</button></div>`).join("")
+        + (e.celulares.length > 1 ? `<button class="btn chico peligro" style="align-self:flex-start;margin-top:4px" data-olvidar-todos>${tr("Olvidar todos")}</button>` : "");
+  }
+
+  if (cambio("actividad", e.actividad)) {
+    $("actividad").innerHTML = !e.actividad.length ? `<div class="vacio">${tr("Sin novedades por ahora.")}</div>`
+      : e.actividad.slice().reverse().map((a) => `<div class="linea"><span class="hora">${esc(a.hora)}</span><span>${esc(a.texto)}</span></div>`).join("");
+  }
+
+  if (Date.now() > tocadoHasta) {  // recién tocado: esperar a que la PC lo guarde antes de pisarlo
+    $("optInicio").checked = e.inicio;
+    $("optVersiones").checked = e.buscarVersiones;
+  }
+  $("nueva").classList.toggle("ver", !!e.versionNueva);
+  $("nuevaTexto").textContent = e.versionNueva ? (idioma === "en" ? `Version ${e.versionNueva} is available` : `Salió la versión ${e.versionNueva}`) : "";
+  $("abrirOpciones").classList.toggle("aviso", !!e.versionNueva);
+}
+
+async function actualizar() {
+  try {
+    pintar(await pedir("estado"));
+    fallas = 0;
+    $("apagado").classList.remove("ver");
+  } catch {
+    if (++fallas >= 3) $("apagado").classList.add("ver");
+  }
+}
+
+// ---- Confirmaciones ----
+let alConfirmar = null;
+function confirmar(titulo, texto, boton, accionSi) {
+  $("confTitulo").textContent = titulo;
+  $("confTexto").textContent = texto;
+  $("confSi").textContent = boton;
+  alConfirmar = accionSi;
+  $("confirmar").classList.add("ver");
+}
+$("confNo").onclick = () => $("confirmar").classList.remove("ver");
+$("confSi").onclick = () => { $("confirmar").classList.remove("ver"); if (alConfirmar) alConfirmar(); };
+
+$("celulares").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button");
+  if (!b) return;
+  if (b.dataset.olvidar) {
+    const id = b.dataset.olvidar;
+    confirmar(tr("¿Olvidar este celular?") + " " + b.dataset.nombre,
+      tr("Pierde el permiso para conectarse y sus ajustes guardados en la PC. Para volver a usarlo hay que escanear el QR de nuevo."),
+      tr("Olvidar"), () => accion("olvidar", `&id=${encodeURIComponent(id)}`));
+  } else if (b.dataset.olvidarTodos !== undefined) {
+    confirmar(tr("¿Olvidar todos los celulares?"),
+      tr("Todos pierden el permiso para conectarse y sus ajustes guardados en la PC. Para volver a usarlos hay que escanear el QR de nuevo."),
+      tr("Olvidar todos"), () => accion("olvidarTodos"));
+  }
+});
+
+// ---- Opciones ----
+$("abrirOpciones").onclick = () => $("opciones").classList.add("ver");
+$("cerrarOpciones").onclick = () => $("opciones").classList.remove("ver");
+$("optInicio").onchange = (ev) => { ev.target.classList.add("tocado"); tocadoHasta = Date.now() + 1500; accion("inicio", `&v=${ev.target.checked ? 1 : 0}`); };
+$("optVersiones").onchange = (ev) => { ev.target.classList.add("tocado"); tocadoHasta = Date.now() + 1500; accion("versiones", `&v=${ev.target.checked ? 1 : 0}`); };
+$("descargar").onclick = () => accion("descargar");
+$("apagar").onclick = () => {
+  $("opciones").classList.remove("ver");
+  confirmar(tr("¿Apagar Control Celular?"), tr("Los celulares se desconectan y se sueltan todos los botones."), tr("Apagar"),
+    () => pedir("accion", "&que=salir").catch(() => {}).then(() => { fallas = 3; $("apagado").classList.add("ver"); }));
+};
+document.querySelectorAll(".velo").forEach((v) => v.addEventListener("click", (ev) => {
+  if (ev.target === v && v.id !== "apagado") v.classList.remove("ver");
+}));
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape") document.querySelectorAll(".velo.ver").forEach((v) => v.id !== "apagado" && v.classList.remove("ver"));
+});
+
+// ---- Copiar la dirección ----
+let avisoHasta = 0;
+$("copiar").onclick = async () => {
+  try { await navigator.clipboard.writeText($("direccion").textContent); } catch { return; }
+  const a = $("avisoFlotante");
+  a.textContent = tr("Copiado");
+  a.classList.add("ver");
+  avisoHasta = Date.now() + 1400;
+  setTimeout(() => { if (Date.now() >= avisoHasta) a.classList.remove("ver"); }, 1500);
+};
+
+document.addEventListener("contextmenu", (ev) => { if (!ev.target.closest("code")) ev.preventDefault(); });
+if (location.hash === "#opciones") $("opciones").classList.add("ver");  // desde el ícono: abrir directo las opciones
+actualizar();
+setInterval(actualizar, 1000);
+</script>
+</body>
+</html>

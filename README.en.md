@@ -49,9 +49,9 @@ To uninstall: Settings → Apps → Control Celular (it also removes the firewal
    - Windows may show **"Windows protected your PC"** because the program isn't signed. Tap **More info → Run
      anyway**.
    - The first time, it asks whether to **open the firewall** (only for your home network) and, if your network is
-     "Public", whether to mark it as **private**. Answer **Y**, only if it's your home network, and accept Windows'
+     "Public", whether to mark it as **private**. Click **Yes**, only if it's your home network, and accept Windows'
      prompt.
-   - If **ViGEmBus** (the virtual controller driver) is missing, it asks **"Install it now?"**. Answer **Y**, accept
+   - If **ViGEmBus** (the virtual controller driver) is missing, it asks **"Install it now?"**. Click **Yes**, accept
      Windows' prompt and click **Install** in its installer. It's included: the official installer, signed by its
      author. When it finishes, Control Celular opens again by itself.
 
@@ -70,9 +70,15 @@ To build your own `ControlCelular.exe`, run **`construir.bat`** (it ends up in `
 
 ### On the PC (every time)
 
-Open **Control Celular**. The window shows a **QR code**, the address and the pairing code. The **controller icon**
-next to the Windows clock has: show the QR code, show or hide the window, start with Windows, paired phones (to
-forget them), version and uninstall, and exit.
+Open **Control Celular**. The neon controller lights up in the middle of the screen and then the **Control Celular
+window** opens: the **QR code**, the pairing code and the address (with a copy button), the **4 player slots** (which
+phone is in each one, and whether the PC sees it as Xbox 360 or DualShock 4), the open **Steam game**, the **paired
+phones** (with **Forget**), the **activity** log, and **⚙ Options** (open when the PC starts, new-version alerts,
+and **Turn off**).
+
+If you close the window, Control Celular **keeps running** in the **controller icon** next to the Windows clock:
+click it (or open the program again) to bring the window back. The icon's menu also has: start with Windows, paired
+phones, version and uninstall, and exit.
 
 ### On the phone (the first time)
 
@@ -129,8 +135,8 @@ Everything is saved per phone, on the PC too: if the PC's IP changes or you rein
 
 | Problem | Try this |
 |---|---|
-| The phone can't open the page | Make sure the PC and the phone are on the **same network**. Close and reopen Control Celular and answer **Y** to open the firewall and mark the network as private. |
-| "ViGEmBus driver is missing" | Answer **Y** when the program offers to install it, or do it manually from [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). If it still isn't detected, restart your PC. |
+| The phone can't open the page | Make sure the PC and the phone are on the **same network**. Close and reopen Control Celular and click **Yes** to open the firewall and mark the network as private. |
+| "ViGEmBus driver is missing" | Click **Yes** when the program offers to install it, or do it manually from [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). If it still isn't detected, restart your PC. |
 | "Windows protected your PC" | The program isn't signed. Tap **More info → Run anyway**, or use the Python option. |
 | The certificate isn't detected (iPhone) | Check you used **Safari** and turned on **full trust** (Settings → General → About → Certificate Trust Settings). |
 | It doesn't work on café, university or hotel WiFi | Those networks don't let devices see each other, and the controller doesn't open ports on public networks on purpose. Use your phone's hotspot. |

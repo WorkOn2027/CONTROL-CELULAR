@@ -1,6 +1,7 @@
 """Ícono de Control Celular al lado del reloj de Windows (área de notificación).
 
-Menú: mostrar el QR para conectar, mostrar u ocultar la ventana, iniciar con Windows y salir.
+Un toque abre la ventana de Control Celular (panel.py). Menú: abrir la ventana, iniciar con Windows,
+celulares emparejados, versión y desinstalar, y salir.
 Al pasar el mouse muestra cuántos celulares hay conectados.
 """
 
@@ -22,6 +23,7 @@ import version
 from idioma import T
 
 CONFIG = rutas.DATOS / "config.json"
+VERSION_NUEVA = {"v": None}  # la última versión publicada, si es más nueva (la muestra también la ventana)
 
 
 def leer_config() -> dict:
@@ -176,7 +178,7 @@ def _hace(visto: int) -> str:
     return T(f"usado hace {int(s // 86400)} días", f"used {int(s // 86400)} days ago")
 
 
-def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
+def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar, abrir_panel=None):
     """Pone el ícono (en su propio hilo) y devuelve una función para avisarle los jugadores conectados."""
     imagen = Image.open(rutas.RECURSOS / "web" / "icono-bandeja.png")
 
@@ -207,7 +209,7 @@ def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
         yield pystray.Menu.SEPARATOR
         yield pystray.MenuItem(T("Olvidar todos", "Forget all"), olvidar_todos)
 
-    nueva = {"v": None}
+    nueva = VERSION_NUEVA
 
     def items_version():
         yield pystray.MenuItem(f"Control Celular {version.VERSION}", None, enabled=False)
@@ -220,10 +222,9 @@ def iniciar(url_qr: str, al_salir, minimizado: bool, listar_celulares, olvidar):
         yield pystray.Menu.SEPARATOR
         yield pystray.MenuItem(T("Desinstalar…", "Uninstall…"), lambda: desinstalar(al_salir))
 
+    abrir = abrir_panel or (lambda: webbrowser.open(url_qr))
     menu = pystray.Menu(
-        pystray.MenuItem(T("Mostrar QR para conectar", "Show QR code to connect"), lambda: webbrowser.open(url_qr), default=True),
-        pystray.MenuItem(T("Mostrar la ventana", "Show the window"), lambda: mostrar_ventana(not ventana_visible()),
-                         checked=lambda _: ventana_visible()),
+        pystray.MenuItem(T("Abrir Control Celular", "Open Control Celular"), lambda: abrir(), default=True),
         pystray.MenuItem(T("Iniciar con Windows", "Start with Windows"), lambda: cambiar_inicio(not inicio_activado()),
                          checked=lambda _: inicio_activado()),
         pystray.MenuItem(T("Celulares emparejados", "Paired phones"), pystray.Menu(items_celulares)),

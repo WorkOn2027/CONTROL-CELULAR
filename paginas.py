@@ -9,6 +9,7 @@ import io
 import json
 import mimetypes
 import re
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -33,6 +34,10 @@ class Contexto:
     juego_abierto: Callable[[], int | None]
     url_qr: Callable[[], str]
     codigo: Callable[[], str]
+    # La ventana de la PC (panel.py): solo desde esta misma PC y con la clave del panel
+    panel_clave: Callable[[], str] | None = None
+    panel_estado: Callable[[], dict] | None = None
+    panel_accion: Callable[[str, dict], dict] | None = None
 
 
 def respuesta(cuerpo: bytes, tipo: str, extra=(), cache="no-cache") -> Response:
@@ -85,12 +90,30 @@ def pagina_inicial(seguro: bool, user_agent: str) -> str:
     return "/configurar-iphone.html" if ios else "/configurar.html"
 
 
+def _panel(connection, ruta: str, consulta: str, seguro: bool, ctx: Contexto):
+    """La ventana de la PC: la página, su estado (JSON) y sus acciones. Solo en esta PC y con la clave."""
+    if seguro or connection.remote_address[0] not in ("127.0.0.1", "::1") or ctx.panel_clave is None:
+        return connection.respond(403, "Solo desde la PC\n")
+    if ruta == "/panel":
+        return respuesta((ctx.web / "panel.html").read_bytes(), "text/html")
+    datos = {k: v[0] for k, v in parse_qs(consulta).items()}
+    if not secrets.compare_digest(datos.get("k", ""), ctx.panel_clave()):
+        return connection.respond(403, "Clave equivocada\n")
+    if ruta == "/panel/estado":
+        return respuesta(json.dumps(ctx.panel_estado(), ensure_ascii=False).encode(), "application/json")
+    if ruta == "/panel/accion":
+        return respuesta(json.dumps(ctx.panel_accion(datos.get("que", ""), datos)).encode(), "application/json")
+    return connection.respond(404, "No encontrado\n")
+
+
 def servir_archivos(seguro: bool, ctx: Contexto):
     def atender_http(connection, request):
         if request.headers.get("Upgrade", "").lower() == "websocket":
             return None
         partes = urlsplit(request.path)
         ruta = partes.path
+        if ruta == "/panel" or ruta.startswith("/panel/"):
+            return _panel(connection, ruta, partes.query, seguro, ctx)
         if ruta in ("/qr", "/qr.svg"):
             # El QR lleva el código de emparejamiento: solo se muestra en esta misma PC.
             if connection.remote_address[0] not in ("127.0.0.1", "::1"):

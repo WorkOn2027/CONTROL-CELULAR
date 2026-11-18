@@ -17,7 +17,7 @@ call "%~dp0probar.bat" sin-pausa || goto :error
 set /p VERSION=<"%TEMP%\control-celular-version.txt"
 echo   Versión: %VERSION%
 
-set OPCIONES=--noconfirm --clean --console --name ControlCelular --icon "%~dp0herramientas\icono.ico" ^
+set OPCIONES=--noconfirm --clean --windowed --name ControlCelular --icon "%~dp0herramientas\icono.ico" ^
   --add-data "%~dp0web;web" --add-data "%~dp0terceros;terceros" --collect-all vgamepad ^
   --hidden-import pystray._win32 --hidden-import bandeja ^
   --workpath "%TEMP%\ControlCelular-build" --specpath "%TEMP%\ControlCelular-build"

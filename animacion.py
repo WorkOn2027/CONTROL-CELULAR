@@ -2,7 +2,8 @@
 
 Sale solo cuando el programa se abre de cero (no al arrancar oculto con Windows, ni si ya estaba abierto, ni al
 volver de minimizado). Dura ~2,5 s y corre en su propio hilo mientras el programa arranca: no agrega espera.
-Mientras tanto la ventana del programa queda oculta; al terminar se muestra (con el QR).
+Mientras tanto la consola queda oculta. Al terminar, si el programa ya arrancó, abre su ventana (panel.py) y la
+consola sigue oculta; si todavía está preguntando algo (firewall, driver), se muestra la consola.
 
 Ventana "layered" de Windows (transparencia por píxel, no se puede tocar ni toma el foco), con ctypes: sin
 librerías nuevas. Las capas (web/animacion-cuerpo.png y web/animacion-neon.png) las genera herramientas/iconos.py.
@@ -21,6 +22,9 @@ from ctypes import wintypes
 
 DURACION = 2.6  # segundos
 FPS = 40
+listo = threading.Event()      # el programa arrancó y va a abrir su ventana (lo marca server.py)
+terminada = threading.Event()  # la animación terminó (o no hubo): ya se puede abrir la ventana
+terminada.set()
 
 
 def _suave(x: float) -> float:
@@ -101,10 +105,8 @@ def debe_mostrarse() -> bool:
         return False
     if any(a in sys.argv for a in ("--minimizado", "--tras-instalar")):
         return False
-    try:
-        if not sys.stdout.isatty():  # sin ventana (pruebas, salida a un archivo)
-            return False
-    except (AttributeError, ValueError):
+    import dialogos
+    if not dialogos.interactivo():  # pruebas, salida a un archivo
         return False
     try:  # si ya está abierto, no: va a avisar «ya está abierto»
         puerto = int(os.environ.get("CONTROL_PUERTO", "8765"))
@@ -265,10 +267,13 @@ def _correr() -> None:
     except Exception:
         pass  # la animación es un adorno: si falla, el programa sigue igual
     finally:
-        _mostrar_consola(True)
+        if not listo.wait(2):  # no arrancó todavía: seguro está preguntando algo en la consola
+            _mostrar_consola(True)
+        terminada.set()
 
 
 def empezar() -> None:
     """Arranca la animación en otro hilo, si corresponde. No espera."""
     if debe_mostrarse():
+        terminada.clear()
         threading.Thread(target=_correr, name="animacion", daemon=True).start()

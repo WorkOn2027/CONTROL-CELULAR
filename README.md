@@ -55,9 +55,9 @@ Ejecutar de todas formas**.
    - Windows puede mostrar **«Windows protegió su PC»**, porque el programa no está firmado. Tocá **Más información →
      Ejecutar de todas formas**.
    - La primera vez te pregunta si querés **abrir el firewall** (solo para la red de tu casa) y, si tu red está como
-     «Pública», si querés marcarla como **privada**. Respondé **S**, solo si es la red de tu casa, y aceptá el
+     «Pública», si querés marcarla como **privada**. Tocá **Sí**, solo si es la red de tu casa, y aceptá el
      permiso de Windows.
-   - Si falta **ViGEmBus**, el driver del control virtual, te pregunta **«¿Lo instalo ahora?»**. Respondé **S**,
+   - Si falta **ViGEmBus**, el driver del control virtual, te pregunta **«¿Lo instalo ahora?»**. Tocá **Sí**,
      aceptá el permiso de Windows y tocá **Instalar** en su instalador. Viene incluido: es el instalador oficial,
      firmado por su autor. Al terminar, Control Celular se vuelve a abrir solo.
 
@@ -79,12 +79,21 @@ Para armar tu propio `ControlCelular.exe`, ejecutá **`construir.bat`**. Lo deja
 
 ### En la PC (cada vez)
 
-Abrí **Control Celular**: `ControlCelular.exe`, o `iniciar.bat` si usás la opción con Python. La ventana muestra un
-**código QR**, la dirección y el código de emparejamiento. Al lado del reloj de Windows aparece el **ícono del
-control**, con este menú:
+Abrí **Control Celular** (o `iniciar.bat` si usás la opción con Python). El control de neón se enciende en el
+centro de la pantalla y después se abre la **ventana de Control Celular**:
 
-- **Mostrar QR para conectar:** abre el QR en grande, en el navegador de la PC.
-- **Mostrar la ventana:** muestra u oculta la ventana negra.
+- el **código QR** para escanear, el código de emparejamiento y la dirección (con botón para copiarla);
+- los **4 lugares de jugador**: qué celular está en cada uno y si la PC lo ve como Xbox 360 o DualShock 4;
+- el **juego de Steam** que está abierto;
+- los **celulares emparejados**, con **Olvidar** para sacarle el permiso a uno o a todos;
+- la **actividad**: quién se conectó, quién se fue, etc.;
+- **⚙ Opciones:** abrir al prender la PC, avisar si hay una versión nueva (y descargarla) y **Apagar**.
+
+Si cerrás la ventana, Control Celular **sigue funcionando** en el **ícono del control** al lado del reloj de
+Windows. Un toque en el ícono vuelve a abrir la ventana (y si abrís el programa otra vez, también). El menú del
+ícono tiene:
+
+- **Abrir Control Celular:** la ventana.
 - **Iniciar con Windows:** arranca solo al prender la PC, oculto, sin la ventana.
 - **Celulares emparejados:** la lista de celulares con permiso para conectarse, para **olvidar** uno o todos. Un
   celular olvidado pierde el permiso y sus ajustes, y para volver a usarlo hay que emparejarlo con el QR.
@@ -197,13 +206,13 @@ Todo se guarda para cada celular, también en la PC.
 
 | Pasa esto | Probá esto |
 |---|---|
-| El celular no abre la página | Fijate que la PC y el celular estén en la **misma red**. Cerrá y volvé a abrir Control Celular, y respondé **S** a abrir el firewall y a marcar la red como privada. También se cambia a mano en Configuración → Red e Internet → tu red → **Privada**. |
-| «Falta el driver ViGEmBus» | Respondé **S** cuando el programa ofrezca instalarlo. Si preferís hacerlo a mano: [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). Si después de instalarlo sigue sin reconocerlo, reiniciá la PC. |
+| El celular no abre la página | Fijate que la PC y el celular estén en la **misma red**. Cerrá y volvé a abrir Control Celular, y tocá **Sí** para abrir el firewall y marcar la red como privada. También se cambia a mano en Configuración → Red e Internet → tu red → **Privada**. |
+| «Falta el driver ViGEmBus» | Tocá **Sí** cuando el programa ofrezca instalarlo. Si preferís hacerlo a mano: [ViGEmBus releases](https://github.com/nefarius/ViGEmBus/releases). Si después de instalarlo sigue sin reconocerlo, reiniciá la PC. |
 | «Windows protegió su PC» | Es porque el programa no está firmado. Tocá **Más información → Ejecutar de todas formas**. Si no confiás, usá la opción con Python, que es el mismo código a la vista. |
 | El antivirus lo bloquea | Pasa a veces con programas armados con PyInstaller. Podés usar la opción con Python, o armar vos el `.exe` con `construir.bat`. |
-| «Control Celular ya está abierto» | Ya hay otra ventana del programa abierta. Usá esa, o cerrala antes. |
+| No veo la ventana | Control Celular sigue abierto al lado del reloj: tocá su ícono, o volvé a abrir el programa (trae la misma ventana). |
 | La página dice «certificado todavía no está instalado» | Repetí el paso 2. Android puede pedir que tengas un bloqueo de pantalla (PIN o patrón). |
-| Cambié de red y la app no abre | La IP de la PC cambió. Abrí la dirección nueva que muestra `iniciar.bat` (el certificado no hace falta reinstalarlo) y volvé a emparejar. |
+| Cambié de red y la app no abre | La IP de la PC cambió. Abrí la dirección nueva que muestra la ventana de Control Celular (el certificado no hace falta reinstalarlo) y volvé a emparejar. |
 | El giroscopio va al revés | En ☰, activá «Invertir horizontal» o «Invertir vertical». |
 | No anda en el WiFi de un bar, la facu o un hotel | Es normal: esas redes no dejan que los equipos se vean entre sí, y por seguridad el control no abre puertos en redes públicas. Usá el hotspot de tu celular. |
 | El juego no reconoce el control | Abrí `iniciar.bat` **antes** que el juego. En Steam: Configuración → Control, tiene que aparecer un «Xbox 360 Controller». |

@@ -3,8 +3,10 @@
 (Una PC sin ViGEmBus hacía que el .exe se cerrara al instante, sin mensaje: vgamepad busca el driver apenas se carga.)
 """
 
+import atexit
 import hashlib
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -17,6 +19,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 
 def arrancar(respuesta="", **variables):
     datos = tempfile.mkdtemp(prefix="control-celular-arranque-")
+    atexit.register(shutil.rmtree, datos, True)  # se borra al terminar las pruebas
     entorno = dict(os.environ, CONTROL_DATOS=datos, CONTROL_SIN_NAVEGADOR="1", CONTROL_SIN_FIREWALL="1",
                    CONTROL_SIN_BANDEJA="1", PYTHONIOENCODING="utf-8", **variables)
     r = subprocess.run([sys.executable, str(RAIZ / "arranque.py")], cwd=RAIZ, env=entorno, input=respuesta,

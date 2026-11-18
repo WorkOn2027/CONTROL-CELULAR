@@ -48,7 +48,9 @@ from websockets.asyncio.server import serve
 
 import celulares
 import certs
+import dialogos
 import paginas
+import panel
 import red
 import rutas
 import steam
@@ -72,12 +74,9 @@ al_cambiar_conexiones = None  # lo usa el ícono de la barra para mostrar quién
 
 
 def salir(codigo_salida: int = 0) -> None:
-    """En el .exe la ventana se cerraría sola y no se leería el mensaje: esperar un Enter."""
+    """Con consola, que no se cierre antes de leer el mensaje (sin consola, el cartel ya esperó)."""
     if rutas.EMPAQUETADO and not MINIMIZADO:
-        try:
-            input(T("  Presioná Enter para cerrar...", "  Press Enter to close..."))
-        except (EOFError, OSError):
-            pass
+        dialogos.esperar_enter(T("  Presioná Enter para cerrar...", "  Press Enter to close..."))
     raise SystemExit(codigo_salida)
 
 
@@ -126,19 +125,20 @@ def crear_primer_control() -> None:
     try:
         jugadores[1] = Jugador(1, al_vibrar=_al_vibrar)
     except Exception as e:  # casi siempre: falta el driver ViGEmBus
-        print()
-        print(T("  No pude crear el control virtual de Xbox:", "  I couldn't create the virtual Xbox controller:"), e)
-        print(T("  Falta el driver ViGEmBus (es gratis y oficial). Te abro la página para descargarlo:",
-                "  The ViGEmBus driver is missing (it's free and official). Opening its download page:"))
-        print(f"    {DESCARGA_VIGEMBUS}")
-        print(T("  Bajá el archivo ViGEmBus_..._x64_x86_arm64.exe, instalalo y volvé a abrir Control Celular.",
-                "  Download ViGEmBus_..._x64_x86_arm64.exe, install it and open Control Celular again."))
-        print()
         try:
             import webbrowser
             webbrowser.open(DESCARGA_VIGEMBUS)
         except Exception:
             pass
+        dialogos.avisar(
+            T(f"\n  No pude crear el control virtual de Xbox: {e}\n"
+              f"  Falta el driver ViGEmBus (es gratis y oficial). Te abro la página para descargarlo:\n"
+              f"    {DESCARGA_VIGEMBUS}\n"
+              f"  Bajá el archivo ViGEmBus_..._x64_x86_arm64.exe, instalalo y volvé a abrir Control Celular.\n",
+              f"\n  I couldn't create the virtual Xbox controller: {e}\n"
+              f"  The ViGEmBus driver is missing (it's free and official). Opening its download page:\n"
+              f"    {DESCARGA_VIGEMBUS}\n"
+              f"  Download ViGEmBus_..._x64_x86_arm64.exe, install it and open Control Celular again.\n"), error=True)
         salir(1)
 
 
@@ -333,10 +333,90 @@ async def vigilar_juego():
 
 # ---------- Arranque ----------
 
+# ---------- La ventana de la PC (panel.py + web/panel.html) ----------
+
+def _bandeja():
+    try:
+        import bandeja
+        return bandeja
+    except Exception:  # sin Windows o sin pystray: la ventana anda igual, sin esas opciones
+        return None
+
+
+def estado_panel() -> dict:
+    import version
+    ip = direccion["ip"]
+    lugares = []
+    for n in range(1, MAX_JUGADORES + 1):
+        j = jugadores.get(n)
+        if j is not None and j.ws is not None:
+            c = registro.celulares.get(j.token, {})
+            lugares.append({"numero": n, "nombre": c.get("nombre") or "Celular", "mando": j.tipo})
+        else:
+            lugares.append({"numero": n})
+    juego = next((x for x in _biblio["lista"] if x["id"] == abierto["id"]), None)
+    b = _bandeja()
+    return {
+        "version": version.VERSION, "idioma": T("es", "en"),
+        "ip": ip, "direccion": f"http://{ip}:{PUERTO}", "codigo": registro.codigo,
+        "sinRed": ip.startswith("127."),
+        "jugadores": lugares, "celulares": registro.lista({j.token for j in conectados()}),
+        "juego": juego["nombre"] if juego else None, "juegosSteam": len(_biblio["lista"]),
+        "inicio": b.inicio_activado() if b else False,
+        "buscarVersiones": b.buscar_versiones_activado() if b else False,
+        "versionNueva": b.VERSION_NUEVA["v"] if b else None,
+        "actividad": list(panel.actividad)[-30:],
+    }
+
+
+def accion_panel(que: str, datos: dict) -> dict:
+    """Lo que se toca en la ventana. Corre dentro del servidor (no hace falta pasar de hilo)."""
+    import version
+    import webbrowser
+    b = _bandeja()
+    activar = datos.get("v") == "1"
+    if que == "olvidar" and datos.get("id"):
+        asyncio.ensure_future(_olvidar({datos["id"]}))
+    elif que == "olvidarTodos":
+        asyncio.ensure_future(_olvidar(None))
+    elif que == "inicio" and b:
+        b.cambiar_inicio(activar)
+    elif que == "versiones" and b:
+        b.guardar_config("buscarVersiones", activar)
+    elif que == "descargar":
+        webbrowser.open(version.PAGINA_RELEASES)
+    elif que == "salir":
+        loop.call_later(.4, soltar_todo_y_salir)  # que la respuesta llegue antes de cerrar
+    else:
+        return {"ok": False}
+    return {"ok": True}
+
+
+def abrir_panel() -> None:
+    """Desde el ícono: trae la ventana (o la abre). Si no se puede, muestra la consola de siempre."""
+    if not panel.abrir(PUERTO):
+        if b := _bandeja():
+            b.mostrar_ventana(True)
+
+
+async def _abrir_panel_al_arrancar() -> None:
+    """Al abrir el programa: cuando termina la animación aparece la ventana, y la consola se esconde."""
+    import animacion
+    animacion.listo.set()
+    await asyncio.to_thread(animacion.terminada.wait, 8)
+    b = _bandeja()
+    if panel.abrir(PUERTO):
+        if b:
+            b.mostrar_ventana(False)
+    elif b:
+        b.mostrar_ventana(True)
+
+
 def contexto_paginas() -> paginas.Contexto:
     return paginas.Contexto(web=WEB, es_celular_emparejado=lambda t: t in registro.celulares,
                             biblioteca=biblioteca, juego_abierto=lambda: abierto["id"],
-                            url_qr=url_qr, codigo=lambda: registro.codigo)
+                            url_qr=url_qr, codigo=lambda: registro.codigo,
+                            panel_clave=lambda: panel.clave, panel_estado=estado_panel, panel_accion=accion_panel)
 
 
 async def main():
@@ -369,13 +449,18 @@ async def main():
         print(T("  El ícono del control, al lado del reloj, tiene el QR y más opciones.",
                 "  The controller icon next to the clock has the QR code and more options."))
         print()
+        panel.capturar_actividad()  # desde acá, lo que se avisa también se ve en la ventana
+        panel.guardar_clave(PUERTO)
         if os.environ.get("CONTROL_SIN_BANDEJA") != "1":
             try:
                 import bandeja
                 al_cambiar_conexiones = bandeja.iniciar(f"http://127.0.0.1:{PUERTO}/qr", soltar_todo_y_salir,
-                                                         MINIMIZADO, lista_para_bandeja, olvidar_desde_bandeja)
+                                                         MINIMIZADO, lista_para_bandeja, olvidar_desde_bandeja,
+                                                         abrir_panel=abrir_panel)
             except Exception as e:
                 print(T("  (No pude poner el ícono en la barra de tareas:", "  (I couldn't add the tray icon:"), e, ")")
+        if panel.debe_abrirse():
+            asyncio.ensure_future(_abrir_panel_al_arrancar())
         await asyncio.to_thread(biblioteca)
         print(T(f"  Biblioteca de Steam: {len(biblioteca())} juegos", f"  Steam library: {len(biblioteca())} games"))
         asyncio.ensure_future(vigilar_juego())
@@ -383,6 +468,7 @@ async def main():
 
 
 def soltar_todo_y_salir() -> None:
+    panel.cerrar()
     for j in jugadores.values():
         try:
             j.soltar()
@@ -414,15 +500,14 @@ def correr() -> None:
     except KeyboardInterrupt:
         pass
     except OSError as e:
-        print()
-        print(T("  No pude arrancar:", "  I couldn't start:"), e)
+        texto = T(f"\n  No pude arrancar: {e}", f"\n  I couldn't start: {e}")
         if getattr(e, "winerror", None) == 10048:
-            print(T("  Parece que Control Celular ya está abierto en otra ventana. Cerrala y probá de nuevo.",
-                    "  It looks like Control Celular is already open in another window. Close it and try again."))
+            texto += T("\n  Parece que Control Celular ya está abierto (mirá el ícono al lado del reloj).",
+                       "\n  It looks like Control Celular is already open (check the icon next to the clock).")
+        dialogos.avisar(texto, error=True)
         salir(1)
     except Exception as e:
-        print()
-        print(T("  Error inesperado:", "  Unexpected error:"), repr(e))
+        dialogos.avisar(T(f"\n  Error inesperado: {e!r}", f"\n  Unexpected error: {e!r}"), error=True)
         salir(1)
 
 
