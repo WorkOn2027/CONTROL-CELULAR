@@ -44,25 +44,63 @@ def circulo(d, cx, cy, r, **k):
     d.ellipse([p(cx - r), p(cy - r), p(cx + r), p(cy + r)], **k)
 
 
+def _curva(tramos, n=48):
+    """Une curvas de Bézier cúbicas: tramos = [(c1, c2, fin), ...] empezando en tramos[0][0] (punto inicial)."""
+    inicio, *resto = tramos
+    puntos = [inicio]
+    x0, y0 = inicio
+    for (ax, ay), (bx, by), (x3, y3) in resto:
+        for i in range(1, n + 1):
+            t = i / n
+            u = 1 - t
+            puntos.append((u ** 3 * x0 + 3 * u * u * t * ax + 3 * u * t * t * bx + t ** 3 * x3,
+                           u ** 3 * y0 + 3 * u * u * t * ay + 3 * u * t * t * by + t ** 3 * y3))
+        x0, y0 = x3, y3
+    return puntos
+
+
+def _espejo(mitad):
+    """De la mitad derecha (de arriba al centro, abajo al centro) arma la figura entera."""
+    izquierda = [(1 - x, y) for x, y in reversed(mitad)]
+    return [(p(x), p(y)) for x, y in mitad + izquierda]
+
+
+# Contorno de un control de verdad (mitad derecha): hombro redondeado, costado que baja al agarre, agarre que
+# termina redondo abajo y la curva de adentro que vuelve al centro.
+MITAD_CUERPO = _curva([
+    (.50, .335),
+    ((.60, .335), (.66, .333), (.70, .335)),     # borde de arriba, entre los gatillos
+    ((.75, .337), (.785, .35), (.80, .375)),     # esquina del hombro, redonda
+    ((.83, .44), (.865, .53), (.875, .62)),      # el costado se abre en diagonal hacia el agarre
+    ((.885, .70), (.875, .755), (.84, .755)),    # abajo del agarre, redondo
+    ((.805, .755), (.78, .74), (.76, .715)),     # vuelve hacia adentro
+    ((.735, .685), (.70, .645), (.66, .64)),     # sube por adentro del agarre
+    ((.60, .638), (.55, .64), (.50, .64)),       # fondo de la «U» entre los agarres
+])
+
+# Gatillos (LB/RB): una pieza curva sobre cada hombro (queda detrás del cuerpo: solo se ve el borde de arriba)
+MITAD_GATILLO = _curva([
+    (.62, .338),
+    ((.66, .312), (.70, .297), (.745, .298)),
+    ((.78, .30), (.80, .325), (.803, .36)),
+    ((.76, .36), (.68, .345), (.62, .338)),
+])
+
+
 def cuerpo_del_control():
-    """Silueta del control (cuerpo + agarres + gatillos), suavizada para que las uniones queden redondas."""
+    """Silueta del control (cuerpo y agarres), suavizada para que las uniones queden redondas."""
     m = mascara()
-    d = ImageDraw.Draw(m)
-    d.rounded_rectangle([p(.17), p(.33), p(.83), p(.625)], radius=p(.11), fill=255)
-    for lado in (1, -1):
-        x0, x1 = .5 - lado * .23, .5 - lado * .32
-        d.line([p(x0), p(.47), p(x1), p(.67)], fill=255, width=p(.15))
-        circulo(d, x1, .67, .075, fill=255)
-    m = m.filter(ImageFilter.GaussianBlur(p(.02))).point(lambda v: 255 if v > 128 else 0)
-    return m
+    ImageDraw.Draw(m).polygon(_espejo(MITAD_CUERPO), fill=255)
+    return m.filter(ImageFilter.GaussianBlur(p(.006))).point(lambda v: 255 if v > 128 else 0)
 
 
 def gatillos():
     m = mascara()
     d = ImageDraw.Draw(m)
-    d.rounded_rectangle([p(.23), p(.285), p(.40), p(.36)], radius=p(.035), fill=255)
-    d.rounded_rectangle([p(.60), p(.285), p(.77), p(.36)], radius=p(.035), fill=255)
-    return m
+    derecho = [(p(x), p(y)) for x, y in MITAD_GATILLO]
+    d.polygon(derecho, fill=255)
+    d.polygon([(S - x, y) for x, y in derecho], fill=255)
+    return m.filter(ImageFilter.GaussianBlur(p(.004))).point(lambda v: 255 if v > 128 else 0)
 
 
 def borde(m, ancho):

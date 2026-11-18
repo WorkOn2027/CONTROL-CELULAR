@@ -5,6 +5,9 @@
 - **Animación de arranque nueva: «tu celular ahora es tu control».** Sobre un fondo negro aparece un celular
   parado, gira hasta quedar acostado, se le prende la pantalla y aparece el control de neón. Se ve nítida
   también en pantallas escaladas (125 %, 150 %…).
+- **El control del ícono parece más un control:** hombros redondeados con sus gatillos y agarres que se abren hacia
+  abajo, como uno de verdad. Mismos colores y mismo neón (escritorio, menú Inicio, ícono del reloj, app del celular
+  y animación).
 
 ## 1.6.0
 
