@@ -20,3 +20,5 @@ if "CONTROL_DATOS" not in os.environ:
     os.environ["CONTROL_DATOS"] = tempfile.mkdtemp(prefix="control-celular-pruebas-")
     atexit.register(shutil.rmtree, os.environ["CONTROL_DATOS"], True)  # no dejar carpetas en Temp
 os.environ["CONTROL_MANDO_FALSO"] = "1"
+os.environ["CONTROL_SIN_FARO"] = "1"       # las pruebas no avisan por la red
+os.environ["CONTROL_SIN_BLUETOOTH"] = "1"  # ni buscan celulares por Bluetooth

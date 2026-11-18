@@ -17,3 +17,10 @@ ajustes-formato-viejo.json
 config.json
 # Pruebas
 .pytest_cache/
+# App de Android: lo que genera el armado y la ruta del SDK de esta PC (la firma vive fuera del proyecto)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.jks
+*.keystore

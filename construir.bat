@@ -5,6 +5,7 @@ cd /d "%~dp0"
 rem Arma, en dist\:
 rem   ControlCelular-Instalar-<versión>.exe   el instalador (lo recomendado para compartir)
 rem   ControlCelular.exe                      la versión portátil (un solo archivo, sin instalar)
+rem   ControlCelular.apk                      la app de Android (si están las herramientas de Android)
 rem La versión en carpeta (para el instalador) se arma en %TEMP%: dentro de OneDrive se traba al borrarla.
 
 if not exist ".venv\Scripts\python.exe" call "%~dp0instalar.bat" || exit /b 1
@@ -17,21 +18,36 @@ call "%~dp0probar.bat" sin-pausa || goto :error
 set /p VERSION=<"%TEMP%\control-celular-version.txt"
 echo   Versión: %VERSION%
 
+echo.
+echo   1/4  App de Android...
+rem La PC también la ofrece en http://<IP>:8765/app.apk (para instalarla sin internet en el celular).
+set APP=%TEMP%\ControlCelular-app
+if exist "%APP%" rmdir /s /q "%APP%"
+mkdir "%APP%"
+echo La app de Android de Control Celular (la sirve la PC en /app.apk).> "%APP%\LEEME.txt"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0herramientas\armar_apk.ps1"
+if errorlevel 1 (
+  echo   No se pudo armar la app de Android: sigo con el programa de la PC.
+) else (
+  copy /y "dist\ControlCelular.apk" "%APP%\ControlCelular.apk" >nul
+)
+
 set OPCIONES=--noconfirm --clean --windowed --name ControlCelular --icon "%~dp0herramientas\icono.ico" ^
-  --add-data "%~dp0web;web" --add-data "%~dp0terceros;terceros" --collect-all vgamepad ^
+  --add-data "%~dp0web;web" --add-data "%~dp0terceros;terceros" --add-data "%APP%;app" ^
+  --collect-all vgamepad --collect-all bleak --collect-all winrt ^
   --hidden-import pystray._win32 --hidden-import bandeja ^
   --workpath "%TEMP%\ControlCelular-build" --specpath "%TEMP%\ControlCelular-build"
 
 echo.
-echo   1/3  Versión portátil (un solo archivo)...
+echo   2/4  Versión portátil (un solo archivo)...
 ".venv\Scripts\python.exe" -m PyInstaller %OPCIONES% --onefile --distpath dist arranque.py || goto :error
 
 echo.
-echo   2/3  Versión en carpeta, para el instalador (arranca más rápido)...
+echo   3/4  Versión en carpeta, para el instalador (arranca más rápido)...
 ".venv\Scripts\python.exe" -m PyInstaller %OPCIONES% --onedir --distpath "%TEMP%\ControlCelular-carpeta" arranque.py || goto :error
 
 echo.
-echo   3/3  Instalador...
+echo   4/4  Instalador...
 set ISCC=
 for %%r in ("%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" "%ProgramFiles%\Inno Setup 6\ISCC.exe") do if exist %%r set ISCC=%%r
 if not defined ISCC (
@@ -45,6 +61,7 @@ echo.
 echo   Listo, en la carpeta dist:
 echo     ControlCelular-Instalar-%VERSION%.exe   (instalador)
 echo     ControlCelular.exe                      (portátil)
+echo     ControlCelular.apk                      (app de Android)
 echo.
 if "%1"=="" pause
 exit /b 0

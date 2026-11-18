@@ -75,6 +75,19 @@
   }
   .qr.sin-red-on .sin-red { display: grid; }
   .ayuda { color: var(--suave); font-size: 13.5px; margin: -2px 0 0; }
+  .pestanas { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--fondo2);
+              border: 1px solid var(--borde); align-self: stretch; }
+  .pestanas button { flex: 1; border: 0; background: none; color: var(--suave); padding: 7px 8px; border-radius: 9px;
+                     cursor: pointer; font-size: 13px; }
+  .pestanas button.activa { background: var(--tarjeta2); color: var(--texto); box-shadow: 0 0 0 1px var(--borde2); }
+  .modo { display: none; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+  .modo.ver { display: flex; }
+  .pasos { margin: 0; padding: 0 0 0 20px; text-align: left; color: var(--suave); font-size: 13px; line-height: 1.55; }
+  .pasos b { color: var(--texto); font-weight: 600; }
+  .bt { margin-left: auto; font-size: 12px; color: var(--tenue); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  #modoApp .qr { max-width: 176px; }
+  #modoApp .codigo span { width: 38px; height: 46px; font-size: 22px; }
+  .lugar .detalle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .codigo-caja { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .etiqueta { color: var(--tenue); font-size: 12px; }
   .codigo { display: flex; gap: 8px; }
@@ -224,6 +237,22 @@
   <main>
     <section class="tarjeta conectar">
       <h2 data-t>Conectá un celular</h2>
+      <div class="pestanas">
+        <button id="verApp" class="activa" data-t>📱 App de Android</button>
+        <button id="verWeb" data-t>🌐 Navegador</button>
+      </div>
+      <div class="modo ver" id="modoApp">
+        <div class="qr"><img id="qrApp" src="/qr-app.svg" alt="QR"></div>
+        <ol class="pasos">
+          <li data-t>Escaneá el QR y bajá la app (la primera vez Android pide permitir instalarla).</li>
+          <li data-t>Abrila: encuentra esta PC sola por WiFi o por el cable USB (o tocá Bluetooth).</li>
+          <li data-t>La primera vez, poné este código:</li>
+        </ol>
+        <div class="codigo" id="codigoApp"></div>
+        <div class="nota" data-t>Anda aunque el router no deje conectarse por WiFi: con el cable USB («Anclaje USB») o por Bluetooth.</div>
+        <div class="nota"><span data-t>¿Sin internet en el celular? Bajala desde esta PC:</span> <code id="apkLocal"></code></div>
+      </div>
+      <div class="modo" id="modoWeb">
       <div class="qr" id="qr">
         <img id="qrImg" alt="QR">
         <div class="sin-red" data-t>Esta PC no está conectada a ninguna red. Conectala al WiFi de tu casa (o por cable al router).</div>
@@ -238,11 +267,12 @@
         <button class="btn chico" id="copiar" data-t>Copiar</button>
       </div>
       <div class="nota" data-t>El celular tiene que estar en el mismo WiFi que esta PC. Hasta 4 celulares a la vez.</div>
+      </div>
     </section>
 
     <section class="columna">
       <div class="tarjeta">
-        <h2><span data-t>Jugadores</span> <span class="cuenta" id="cuentaJugadores"></span></h2>
+        <h2><span data-t>Jugadores</span> <span class="cuenta" id="cuentaJugadores"></span><span class="bt" id="estadoBT"></span></h2>
         <div class="jugadores" id="jugadores"></div>
       </div>
       <div class="juego nada" id="juego">
@@ -378,6 +408,16 @@ const EN = {
   "¿Apagar Control Celular?": "Turn off Control Celular?",
   "Los celulares se desconectan y se sueltan todos los botones.": "Phones disconnect and every button is released.",
   "Sin red": "No network",
+  "📱 App de Android": "📱 Android app",
+  "🌐 Navegador": "🌐 Browser",
+  "Escaneá el QR y bajá la app (la primera vez Android pide permitir instalarla).": "Scan the QR code and get the app (the first time Android asks you to allow installing it).",
+  "Abrila: encuentra esta PC sola por WiFi o por el cable USB (o tocá Bluetooth).": "Open it: it finds this PC by itself over WiFi or the USB cable (or tap Bluetooth).",
+  "La primera vez, poné este código:": "The first time, enter this code:",
+  "Anda aunque el router no deje conectarse por WiFi: con el cable USB («Anclaje USB») o por Bluetooth.": "It works even if the router blocks WiFi connections: with the USB cable (“USB tethering”) or Bluetooth.",
+  "WiFi o cable": "WiFi or cable",
+  "¿Sin internet en el celular? Bajala desde esta PC:": "No internet on the phone? Get it from this PC:",
+  "Bluetooth listo": "Bluetooth ready",
+  "Esta PC no tiene Bluetooth": "This PC has no Bluetooth",
 };
 const tr = (s) => (idioma === "en" && EN[s]) || s;
 function traducir() {
@@ -430,15 +470,21 @@ function pintar(e) {
 
   if (cambio("qr", [e.codigo, e.ip])) $("qrImg").src = `/qr.svg?c=${e.codigo}&ip=${e.ip}`;
   $("qr").classList.toggle("sin-red-on", e.sinRed);
-  if (cambio("codigo", e.codigo)) $("codigo").innerHTML = [...e.codigo].map((d) => `<span>${esc(d)}</span>`).join("");
+  if (cambio("codigo", e.codigo)) {
+    const cajas = [...e.codigo].map((d) => `<span>${esc(d)}</span>`).join("");
+    $("codigo").innerHTML = cajas; $("codigoApp").innerHTML = cajas;
+  }
+  $("estadoBT").textContent = e.bluetooth === "buscando" ? "🔵 " + tr("Bluetooth listo")
+    : e.bluetooth === "sin-bluetooth" ? tr("Esta PC no tiene Bluetooth") : "";
   $("direccion").textContent = e.direccion;
+  $("apkLocal").textContent = e.direccion + "/app.apk";
 
   if (cambio("jugadores", e.jugadores)) {
     $("cuentaJugadores").textContent = `${conectados.length}/4`;
     $("jugadores").innerHTML = e.jugadores.map((j, i) => j.nombre
       ? `<div class="lugar on" style="--c:${COLORES[i]}"><div class="num">${j.numero}</div><div class="txt">
            <div class="nombre">${esc(j.nombre)}</div>
-           <div class="detalle">${tr("Jugador")} ${j.numero}<span class="chip">${j.mando === "ds4" ? "DualShock 4" : "Xbox 360"}</span></div></div></div>`
+           <div class="detalle">${tr("Jugador")} ${j.numero}<span class="chip">${j.mando === "ds4" ? "DualShock 4" : "Xbox 360"}</span><span class="chip">${j.conexion === "bluetooth" ? "Bluetooth" : tr("WiFi o cable")}</span></div></div></div>`
       : `<div class="lugar"><div class="num">${j.numero}</div><div class="txt">
            <div class="nombre" style="color:var(--suave);font-weight:500">${tr("Libre")}</div>
            <div class="detalle">${tr("Escaneá el QR para sumarte")}</div></div></div>`).join("");
@@ -481,6 +527,16 @@ async function actualizar() {
     if (++fallas >= 3) $("apagado").classList.add("ver");
   }
 }
+
+// ---- Con la app de Android o con el navegador ----
+function mostrarModo(app) {
+  $("verApp").classList.toggle("activa", app); $("verWeb").classList.toggle("activa", !app);
+  $("modoApp").classList.toggle("ver", app); $("modoWeb").classList.toggle("ver", !app);
+  try { localStorage.setItem("modoPanel", app ? "app" : "web"); } catch (e) {}
+}
+$("verApp").onclick = () => mostrarModo(true);
+$("verWeb").onclick = () => mostrarModo(false);
+try { if (localStorage.getItem("modoPanel") === "web") mostrarModo(false); } catch (e) {}
 
 // ---- Confirmaciones ----
 let alConfirmar = null;

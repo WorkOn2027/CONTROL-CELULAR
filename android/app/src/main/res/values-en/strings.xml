@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sin_pc">Pick your PC from the list (or type its address).</string>
+    <string name="sin_bluetooth">This phone has no Bluetooth available. Use WiFi or the USB cable.</string>
+    <string name="prender_bluetooth">Turn on your phone\'s Bluetooth and try again.</string>
+    <string name="sin_permiso_bluetooth">Without the “Nearby devices” permission the app can\'t use Bluetooth. You can grant it in Settings → Apps → Control Celular → Permissions.</string>
+    <string name="sin_anuncio">This phone can\'t advertise over Bluetooth (it lacks that feature). Use WiFi or the USB cable.</string>
+</resources>

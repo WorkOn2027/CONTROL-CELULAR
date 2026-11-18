@@ -194,3 +194,14 @@ def test_ventana_de_la_pc(servidor):
     assert any(j.get("nombre") == "Celular de prueba" for j in e["jugadores"])
     assert any("conectado" in a["texto"] or "connected" in a["texto"] for a in e["actividad"])
     assert json.loads(get(f"{base}/accion?k={clave}&que=no-existe")[1]) == {"ok": False}
+
+
+def test_la_app_de_android_se_puede_bajar():
+    status, svg = get(f"http://127.0.0.1:{PUERTO}/qr-app.svg")
+    assert status == 200 and "<svg" in svg
+    try:
+        r = urllib.request.urlopen(f"http://127.0.0.1:{PUERTO}/app.apk", timeout=10)
+        datos = r.read()
+        assert datos[:2] == b"PK" and r.headers["Content-Type"] == "application/vnd.android.package-archive"
+    except urllib.error.HTTPError as e:  # sin las herramientas de Android no se arma la app: avisa con un 404
+        assert e.code == 404

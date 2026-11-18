@@ -79,7 +79,26 @@ If you close the window, Control Celular **keeps running** in the **controller i
 click it (or open the program again) to bring the window back. The icon's menu also has: start with Windows, paired
 phones, version and uninstall, and exit.
 
-### On the phone (the first time)
+### On the phone: with the Android app (recommended)
+
+The app works in any home because it connects in three ways:
+
+| Way | How | When |
+|---|---|---|
+| 📶 **WiFi** | The app finds the PC by itself: tap its name. | Phone and PC on the same network. |
+| 🔌 **USB cable** | Plug the phone into the PC and turn on **“USB tethering”** (the app has a button that takes you there). The PC shows up in the list. | If the router doesn't let devices see each other, or for the lowest delay. |
+| 🔵 **Bluetooth** | Tap **Connect via Bluetooth** with Control Celular open on the PC: they connect by themselves. | If the PC has Bluetooth and you don't want cables. |
+
+1. On the PC, in the Control Celular window, **📱 Android app** tab: scan the QR code and get `ControlCelular.apk`
+   (also on **[Releases](../../releases/latest)**, or at `http://<PC IP>:8765/app.apk` if the phone has no internet).
+2. Open the file. The first time Android asks you to **allow installing apps from this source**: accept and tap
+   **Install**. Play Protect may warn because the app isn't on Google Play: tap **Install anyway**.
+3. Open **Control Celular** on the phone, pick your PC (or Bluetooth) and enter the **code** shown on the PC the first
+   time. After that it connects by itself.
+
+With the app you don't need the certificate: gyro and vibration always work.
+
+### On the phone: no app, from the browser (and on iPhone)
 
 1. **Scan the QR code** with your phone's camera: **you land straight on the controller** and it pairs by itself.
 2. **Optional:** to install it as an app and use the gyro, open **☰ → Enable app and gyro** and install the

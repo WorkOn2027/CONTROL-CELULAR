@@ -104,7 +104,28 @@ Windows. Un toque en el ícono vuelve a abrir la ventana (y si abrís el program
 
 Al pasar el mouse por el ícono, te dice qué jugadores están conectados.
 
-### En el celular (la primera vez)
+### En el celular: con la app de Android (recomendado)
+
+La app anda en cualquier casa, porque se conecta de tres formas:
+
+| Forma | Cómo | Cuándo usarla |
+|---|---|---|
+| 📶 **WiFi** | La app encuentra la PC sola: tocás su nombre y listo. | El celular y la PC en la misma red. |
+| 🔌 **Cable USB** | Enchufás el celular a la PC con su cable y activás **«Anclaje USB»** (la app tiene un botón que te lleva ahí). La PC aparece en la lista. | Si el router no deja que los equipos se vean (pasa en algunas casas), o para la menor demora. |
+| 🔵 **Bluetooth** | Tocás **Conectar por Bluetooth** con Control Celular abierto en la PC: se conectan solos. | Si la PC tiene Bluetooth y no querés cables. |
+
+1. En la PC, en la ventana de Control Celular, pestaña **📱 App de Android**: escaneá el QR con el celular y bajá
+   `ControlCelular.apk` (también está en **[Releases](../../releases/latest)**, o en `http://<IP de la PC>:8765/app.apk`
+   si el celular no tiene internet).
+2. Abrí el archivo. La primera vez Android pide **permitir instalar apps de esta fuente**: aceptá y tocá
+   **Instalar**. Puede aparecer un aviso de Play Protect porque la app no está en Google Play: tocá
+   **Instalar de todas formas**.
+3. Abrí **Control Celular** en el celular, elegí tu PC (o Bluetooth) y la primera vez poné el **código** que muestra
+   la PC. Después se conecta sola.
+
+Con la app no hace falta el certificado: el giroscopio y la vibración andan siempre.
+
+### En el celular: sin app, desde el navegador (y en iPhone)
 
 1. **Escaneá el QR** con la cámara del celular, o abrí en Chrome la dirección `http://…:8765` que muestra la PC.
    **Entrás directo al control** y se empareja solo: ya podés jugar.

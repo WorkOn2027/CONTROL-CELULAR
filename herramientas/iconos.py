@@ -232,6 +232,21 @@ if __name__ == "__main__":
     neon.crop(caja).resize((ancho, alto), Image.LANCZOS).save(WEB / "animacion-neon.png", optimize=True)
     print("ok animación", ancho, alto)
 
+    # App de Android: ícono clásico (5 tamaños) y adaptable (el control sobre el fondo oscuro, Android lo recorta)
+    res = AQUI.parent / "android" / "app" / "src" / "main" / "res"
+    for carpeta, tam in (("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)):
+        (res / f"mipmap-{carpeta}").mkdir(parents=True, exist_ok=True)
+        normal.resize((tam, tam), Image.LANCZOS).save(res / f"mipmap-{carpeta}" / "ic_launcher.png", optimize=True)
+    caja = solo_control.getbbox()
+    control = solo_control.crop(caja)
+    ancho = round(432 * .64)
+    control = control.resize((ancho, round(ancho * control.height / control.width)), Image.LANCZOS)
+    primer_plano = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
+    primer_plano.alpha_composite(control, ((432 - control.width) // 2, (432 - control.height) // 2))
+    (res / "drawable").mkdir(parents=True, exist_ok=True)
+    primer_plano.save(res / "drawable" / "ic_launcher_foreground.png", optimize=True)
+    print("ok íconos de Android")
+
     normal.resize((256, 256), Image.LANCZOS).save(
         AQUI / "icono.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
     print("ok icono.ico")

@@ -46,7 +46,8 @@ window.RESULTADO = (r) => { document.title = "RES:" + JSON.stringify({ r, errore
 </script>"""
 
 
-def ejecutar(pagina: str, prueba_js: str, ajustes: dict | None = None, idioma="es-AR", ua=None, ancho=800, alto=360):
+def ejecutar(pagina: str, prueba_js: str, ajustes: dict | None = None, idioma="es-AR", ua=None, ancho=800, alto=360,
+             antes: str = ""):
     """Abre la página con los ajustes dados (localStorage), corre prueba_js (async) y devuelve su resultado."""
     html = (WEB / pagina).read_text("utf-8")
     for js in ["i18n.js", "plantillas.js"]:
@@ -55,7 +56,7 @@ def ejecutar(pagina: str, prueba_js: str, ajustes: dict | None = None, idioma="e
     datos = {"token": "x", "tutorialVisto": "1", **(ajustes or {})}
     guardar = "localStorage.clear();" + "".join(f"localStorage.setItem({json.dumps(k)},{json.dumps(v)});"
                                                  for k, v in datos.items())
-    html = html.replace("<title>", PREPARACION + f"<script>{guardar}</script><title>", 1)
+    html = html.replace("<title>", PREPARACION + f"<script>{guardar}{antes}</script><title>", 1)
     html = html.replace("</body>", "<script>setTimeout(async () => { try { RESULTADO(await (async () => {"
                         + prueba_js + "})()); } catch (e) { ERRORES.push('PRUEBA: ' + e); RESULTADO(null); } }, 150);"
                         "</script></body>")
@@ -217,3 +218,53 @@ def test_control_de_ps4(pagina):
     assert r["msg"] == ["b TOUCH 1", "b TOUCH 0", "b A 1", "b A 0"]
     for t in ["✕", "○", "□", "△", "L1", "R2", "Touchpad", "Share", "Options", "PS"]:
         assert t in r["textos"], t
+
+
+# ---------- La página dentro de la app de Android (el puente window.ControlCelularApp, simulado) ----------
+
+APP_FALSA = r"""
+window.APPLOG = { conectar: [], enviar: [], vibrar: [] };
+window.ControlCelularApp = {
+  pcs: () => JSON.stringify([{ ip: "192.168.0.244", puerto: 8765, nombre: "PC-SALA" }]),
+  conectar: (d) => { APPLOG.conectar.push(JSON.parse(d));
+    if (window.FALLA_BT && JSON.parse(d).tipo === "bt") { setTimeout(() => ccEvento("error", "sin bluetooth"), 0); return; }
+    setTimeout(() => { ccEvento("open", ""); ccEvento("msg", "ok x"); ccEvento("msg", "n 2"); }, 0); },
+  enviar: (m) => APPLOG.enviar.push(m), cerrar: () => {}, vibrar: (p) => APPLOG.vibrar.push(p),
+  abrirAnclaje: () => { APPLOG.anclaje = true; }, version: () => "1.8.0",
+};
+"""
+
+
+def test_app_elige_la_pc_y_manda_por_la_app():
+    r = ejecutar("index.html", """
+      const alAbrir = document.getElementById('buscarPC').classList.contains('ver');
+      const lista = [...document.querySelectorAll('#pcLista button')].map((b) => b.textContent);
+      document.querySelector('#pcLista button').click(); await espera(60);
+      await apretar(document.querySelector('#pad3 [data-b=A]'));
+      navigator.vibrate(12);
+      document.getElementById('abrirAnclaje').click();
+      return { alAbrir, lista, cerrado: !document.getElementById('buscarPC').classList.contains('ver'),
+               destino: APPLOG.conectar[0], enviados: APPLOG.enviar, vibro: APPLOG.vibrar, anclaje: APPLOG.anclaje,
+               guardado: JSON.parse(localStorage.getItem('destino')),
+               sinPantallaCompleta: document.getElementById('pantalla').hidden,
+               cambiarPC: !document.getElementById('cambiarPC').hidden };""", antes=APP_FALSA)
+    assert r["alAbrir"] and r["lista"] == ["🖥 PC-SALA · 192.168.0.244"] and r["cerrado"]
+    assert r["destino"] == {"tipo": "red", "ip": "192.168.0.244", "puerto": 8765, "nombre": "PC-SALA"}
+    assert r["enviados"][0] == "a x" and "b A 1" in r["enviados"] and "b A 0" in r["enviados"]  # por la app
+    assert r["vibro"] == ["12", "12"]  # el toque de «A» y el pedido a mano: los dos vibran a través de la app
+    assert r["anclaje"] and r["guardado"]["ip"] == "192.168.0.244"
+    assert r["sinPantallaCompleta"] and r["cambiarPC"]
+
+
+def test_app_recuerda_la_pc_y_el_bluetooth():
+    r = ejecutar("index.html", """
+      const directo = !document.getElementById('buscarPC').classList.contains('ver');
+      document.getElementById('cambiarPC').click(); await espera(30);
+      const volvioALaLista = document.getElementById('buscarPC').classList.contains('ver');
+      window.FALLA_BT = true;
+      document.getElementById('usarBT').click(); await espera(60);
+      return { directo, volvioALaLista, intentos: APPLOG.conectar.map((d) => d.tipo),
+               listaOtraVez: document.getElementById('buscarPC').classList.contains('ver') };""",
+                 ajustes={"destino": '{"tipo":"red","ip":"10.0.0.5","puerto":8765,"nombre":"PC"}'}, antes=APP_FALSA)
+    assert r["directo"] and r["volvioALaLista"]
+    assert r["intentos"] == ["red", "bt"] and r["listaOtraVez"]  # Bluetooth falló: avisa y vuelve a la lista

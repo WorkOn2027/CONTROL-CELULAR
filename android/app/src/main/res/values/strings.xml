@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sin_pc">Elegí tu PC de la lista (o escribí su dirección).</string>
+    <string name="sin_bluetooth">Este celular no tiene Bluetooth disponible. Usá WiFi o el cable USB.</string>
+    <string name="prender_bluetooth">Prendé el Bluetooth del celular y probá de nuevo.</string>
+    <string name="sin_permiso_bluetooth">Sin el permiso de «Dispositivos cercanos» la app no puede usar el Bluetooth. Podés darlo en Ajustes → Apps → Control Celular → Permisos.</string>
+    <string name="sin_anuncio">Este celular no puede anunciarse por Bluetooth (le falta esa función). Usá WiFi o el cable USB.</string>
+</resources>

@@ -23,6 +23,11 @@ import steam
 from idioma import T
 
 ES_IOS = re.compile(r"iPhone|iPad|iPod")
+# La app de Android trae sus propias páginas y le pide a la PC la biblioteca de Steam (con el token del celular):
+# el navegador de la app necesita este permiso para leerla desde otro origen.
+PARA_LA_APP = [("Access-Control-Allow-Origin", "*")]
+# La app de Android, siempre la última versión publicada (el archivo de Releases se tiene que llamar así)
+DESCARGA_APP = "https://github.com/WorkOn2027/CONTROL-CELULAR/releases/latest/download/ControlCelular.apk"
 
 
 @dataclass
@@ -114,6 +119,14 @@ def servir_archivos(seguro: bool, ctx: Contexto):
         ruta = partes.path
         if ruta == "/panel" or ruta.startswith("/panel/"):
             return _panel(connection, ruta, partes.query, seguro, ctx)
+        if ruta == "/app.apk":  # la app de Android, desde la PC (para instalarla sin internet en el celular)
+            for apk in (ctx.web.parent / "app" / "ControlCelular.apk", ctx.web.parent / "dist" / "ControlCelular.apk"):
+                if apk.is_file():
+                    return respuesta(apk.read_bytes(), "application/vnd.android.package-archive",
+                                     [("Content-Disposition", 'attachment; filename="ControlCelular.apk"')])
+            return connection.respond(404, "La app no viene en esta version\n")
+        if ruta == "/qr-app.svg":  # para bajar la app de Android (no lleva nada privado)
+            return respuesta(qr_svg(DESCARGA_APP), "image/svg+xml", cache="max-age=3600")
         if ruta in ("/qr", "/qr.svg"):
             # El QR lleva el código de emparejamiento: solo se muestra en esta misma PC.
             if connection.remote_address[0] not in ("127.0.0.1", "::1"):
@@ -128,12 +141,12 @@ def servir_archivos(seguro: bool, ctx: Contexto):
             if ruta == "/juegos":
                 lista = [{k: j[k] for k in ("id", "nombre", "tipo")} for j in ctx.biblioteca()]
                 cuerpo = json.dumps({"abierto": ctx.juego_abierto(), "juegos": lista}, ensure_ascii=False)
-                return respuesta(cuerpo.encode("utf-8"), "application/json")
+                return respuesta(cuerpo.encode("utf-8"), "application/json", PARA_LA_APP)
             numero = ruta.rsplit("/", 1)[1]
             p = steam.portada(int(numero)) if numero.isdigit() else None
             if not p:
                 return connection.respond(404, "Sin portada\n")
-            return respuesta(p.read_bytes(), "image/jpeg", cache="max-age=86400")
+            return respuesta(p.read_bytes(), "image/jpeg", PARA_LA_APP, cache="max-age=86400")
         if ruta == "/ca.crt":
             return respuesta(certs.ca_der(), "application/x-x509-ca-cert",
                              [("Content-Disposition", 'attachment; filename="control-celular-ca.crt"')])

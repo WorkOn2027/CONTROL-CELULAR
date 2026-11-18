@@ -1,5 +1,18 @@
 # Novedades
 
+## 1.8.0
+
+- **App de Android (`ControlCelular.apk`):** se instala en el celular y se conecta con la PC de tres formas, para que
+  ande en cualquier casa:
+  - **WiFi:** la app encuentra la PC sola (no hay que escribir direcciones ni escanear nada);
+  - **cable USB:** enchufás el celular a la PC y activás «Anclaje USB»; la conexión va por el cable, sin pasar por
+    el router (anda aunque el router no deje que los equipos se vean);
+  - **Bluetooth:** si la PC tiene Bluetooth, se conectan directo, sin router.
+  Es el mismo control de siempre (todos los modelos, el editor, el giroscopio), pero sin certificado, sin navegador
+  y con la vibración andando siempre. El navegador sigue funcionando como antes, y en iPhone sigue siendo la página.
+- **La ventana de la PC** tiene la pestaña «App de Android», con un QR para bajar la app (también se puede bajar
+  desde la misma PC, sin internet en el celular), y muestra si cada jugador está por WiFi/cable o por Bluetooth.
+
 ## 1.7.1
 
 - **Conecta aunque Windows tenga tu red como «Pública»:** Windows marca así casi toda red nueva, y entonces el

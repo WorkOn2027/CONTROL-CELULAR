@@ -49,6 +49,7 @@ from websockets.asyncio.server import serve
 import celulares
 import certs
 import dialogos
+import enlaces
 import paginas
 import panel
 import red
@@ -67,6 +68,7 @@ MINIMIZADO = "--minimizado" in sys.argv  # al arrancar con Windows: ventana ocul
 SIN_STEAM = os.environ.get("CONTROL_SIN_STEAM") == "1"
 
 registro = Registro(rutas.DATOS)
+bluetooth = enlaces.Bluetooth()  # celulares con la app de Android por Bluetooth
 jugadores: dict[int, Jugador] = {}
 loop: asyncio.AbstractEventLoop | None = None
 direccion = {"qr": "", "ip": ""}
@@ -351,7 +353,8 @@ def estado_panel() -> dict:
         j = jugadores.get(n)
         if j is not None and j.ws is not None:
             c = registro.celulares.get(j.token, {})
-            lugares.append({"numero": n, "nombre": c.get("nombre") or "Celular", "mando": j.tipo})
+            lugares.append({"numero": n, "nombre": c.get("nombre") or "Celular", "mando": j.tipo,
+                            "conexion": getattr(j.ws, "tipo", "red")})
         else:
             lugares.append({"numero": n})
     juego = next((x for x in _biblio["lista"] if x["id"] == abierto["id"]), None)
@@ -366,6 +369,7 @@ def estado_panel() -> dict:
         "buscarVersiones": b.buscar_versiones_activado() if b else False,
         "versionNueva": b.VERSION_NUEVA["v"] if b else None,
         "actividad": list(panel.actividad)[-30:],
+        "bluetooth": bluetooth.estado,
     }
 
 
@@ -464,6 +468,10 @@ async def main():
         await asyncio.to_thread(biblioteca)
         print(T(f"  Biblioteca de Steam: {len(biblioteca())} juegos", f"  Steam library: {len(biblioteca())} games"))
         asyncio.ensure_future(vigilar_juego())
+        if enlaces.faro_activado():  # la app de Android encuentra la PC sola (WiFi y cable USB)
+            asyncio.ensure_future(enlaces.faro(PUERTO))
+        if enlaces.bluetooth_activado():  # y por Bluetooth, si la PC tiene
+            asyncio.ensure_future(bluetooth.correr(atender))
         await seguro.serve_forever()
 
 

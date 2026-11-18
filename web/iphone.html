@@ -158,6 +158,19 @@
   .capa input[type=range] { width: 30vw; font-size: inherit; padding: 0; border: 0; }
   .capa select { font-size: 4.2vh; padding: 1vh 2vh; border-radius: 2vh; border: 1px solid var(--tecla-borde);
                  background: var(--superficie); color: var(--texto); font-family: inherit; }
+  /* App de Android: elegir la PC (WiFi, cable USB o Bluetooth) */
+  #buscarPC.ver { justify-content: flex-start; overflow-y: auto; touch-action: pan-y; gap: 2.4vh; }
+  #buscarPC h2 { margin: 0; font-size: 5.6vh; }
+  #pcEstado { font-size: 3.6vh; opacity: .75; }
+  .pcLista { display: flex; flex-wrap: wrap; gap: 2vh; justify-content: center; }
+  .pcLista button { font-size: 4.2vh; }
+  .formas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vw; width: 100%; max-width: 160vh; }
+  .forma { display: flex; flex-direction: column; gap: 1.6vh; align-items: center; padding: 2.4vh 2vw;
+           border: 1px solid var(--tecla-borde); border-radius: 3vh; background: var(--superficie); font-size: 3.2vh; }
+  .forma b { font-size: 4.2vh; }
+  .forma button { font-size: 3.4vh !important; padding: 1.4vh 3vh !important; }
+  #buscarPC details { font-size: 3.4vh; }
+  #buscarPC details input { font-size: 4vh; width: 40vh; letter-spacing: 0; }
   #menu.ver { display: grid; grid-template-columns: 1fr 1fr; align-content: start; justify-items: start;
               gap: 3vh 5vw; padding: 5vh 6vw; overflow-y: auto; touch-action: pan-y; text-align: left; }
   #menu h2 { font-size: 4.6vh; grid-column: 1 / -1; }
@@ -259,6 +272,21 @@
   <button id="conectar">Conectar</button>
 </div>
 
+<div class="capa" id="buscarPC">
+  <h2>Conectá con tu PC</h2>
+  <div id="pcEstado">Buscando Control Celular…</div>
+  <div class="pcLista" id="pcLista"></div>
+  <div class="formas">
+    <div class="forma"><b>📶 WiFi</b><span>El celular y la PC en la misma red. Tu PC aparece arriba sola.</span></div>
+    <div class="forma"><b>🔌 Cable USB</b><span>Enchufá el celular a la PC con el cable y activá «Anclaje USB». Tu PC aparece arriba sola.</span>
+      <button id="abrirAnclaje">Abrir «Anclaje USB»</button></div>
+    <div class="forma"><b>🔵 Bluetooth</b><span>Si la PC tiene Bluetooth. Dejá Control Celular abierto en la PC: se conecta solo.</span>
+      <button id="usarBT">Conectar por Bluetooth</button></div>
+  </div>
+  <details><summary>Escribir la dirección de la PC a mano</summary>
+    <input id="pcManual" inputmode="decimal" placeholder="192.168.0.10" autocomplete="off"> <button id="pcManualIr">Conectar</button></details>
+</div>
+
 <div class="capa" id="menu">
   <h2>Elegí el control</h2>
   <div class="ancho modelos">
@@ -320,6 +348,7 @@
     <button id="verTutorial">Ver tutorial</button>
     <button id="pantalla" hidden>Pantalla completa</button>
     <button id="agregarInicio">Agregar a inicio (iPhone)</button>
+    <button id="cambiarPC" hidden>Cambiar de PC o de conexión</button>
     <button id="instalar" hidden>Instalar app</button>
     <a class="btn" id="activar" href="/configurar-iphone.html?guia=1" hidden>Activar app y giroscopio</a>
   </div>
@@ -460,6 +489,9 @@
     if (m) m.content = opt.noche ? "#0f1114" : "#eceef1";
   }
   aplicarNoche();
+  // App de Android: la conexión, la vibración y la búsqueda de la PC las maneja la app (window.ControlCelularApp).
+  const APP = window.ControlCelularApp || null;
+  if (APP) navigator.vibrate = (p) => { try { APP.vibrar(JSON.stringify(p)); } catch (e) {} return true; };
   const puedeVibrar = "vibrate" in navigator;
 
   // ---------- Conexión ----------
@@ -467,6 +499,25 @@
   // El QR de la PC trae el código de emparejamiento (?c=1234): se usa solo y se borra de la barra de direcciones.
   const codigoQR = new URLSearchParams(location.search).get("c");
   if (codigoQR) history.replaceState(null, "", location.pathname);
+
+  // A qué PC conectarse en la app: {tipo: "red", ip, puerto, nombre} (WiFi o cable USB) o {tipo: "bt"} (Bluetooth).
+  let destino = null, BASE = "", fallasRed = 0;
+  try { destino = JSON.parse(leer("destino", "null")); } catch (e) {}
+  function crearConexion() {
+    if (!APP) return new WebSocket(`${seguro ? "wss" : "ws"}://${location.host}/ws`);
+    // En la app la conexión la maneja Android (WiFi y cable USB con WebSocket; Bluetooth LE), con la misma forma
+    // que un WebSocket. La biblioteca de Steam se pide a la PC elegida a través de la app (/pc/...).
+    BASE = destino && destino.tipo === "red" ? "/pc" : "";
+    const c = { readyState: 0, send(m) { if (c.readyState === 1) APP.enviar(m); }, close() { c.readyState = 3; APP.cerrar(); } };
+    window.ccEvento = (tipo, dato) => {
+      if (tipo === "open") { c.readyState = 1; if (c.onopen) c.onopen(); }
+      else if (tipo === "msg") { if (c.onmessage) c.onmessage({ data: dato }); }
+      else if (tipo === "close" && c.readyState !== 3) { c.readyState = 3; if (c.onclose) c.onclose(); }
+      else if (tipo === "error") { c.readyState = 3; c.onclose = null; alert(dato); mostrarBuscador(); }
+    };
+    APP.conectar(JSON.stringify(destino || {}));
+    return c;
+  }
 
   function enviar(m) { if (listo && !editando && ws.readyState === 1) ws.send(m); }
   function enviarAjustes() {
@@ -548,8 +599,9 @@
   function conectar(clave) {
     if (ws) { ws.onclose = null; ws.close(); }
     listo = false;
-    ws = new WebSocket(`${seguro ? "wss" : "ws"}://${location.host}/ws`);
-    ws.onopen = () => ws.send("a " + clave);
+    ws = crearConexion();
+    let abrio = false;
+    ws.onopen = () => { abrio = true; fallasRed = 0; ws.send("a " + clave); };
     ws.onmessage = (e) => {
       const p = e.data.split(" ");
       if (p[0] === "ok") {
@@ -593,7 +645,10 @@
     };
     ws.onclose = () => {
       listo = false; ping = 0; puntos(false); soltarTodo(false);
+      // En la app: si la PC elegida no contesta, volver a la lista de PCs (cambió la red, se cerró, etc.)
+      if (APP && destino && destino.tipo === "red" && !abrio && ++fallasRed >= 3) { mostrarBuscador(); return; }
       if (token) setTimeout(() => conectar(token), 1000);
+      else if (APP && !abrio) setTimeout(() => conectar(clave), 1000);
     };
   }
   // Ping cada 2 segundos (mensaje chiquito): muestra la demora al lado del puntito.
@@ -898,6 +953,7 @@
 
   // ---------- Menú, pantalla completa e instalar ----------
   function pantallaCompleta() {
+    if (APP) return;  // la app ya ocupa toda la pantalla
     const d = document.documentElement;
     if (!document.fullscreenElement && d.requestFullscreen) {
       d.requestFullscreen({ navigationUI: "hide" }).then(() => {
@@ -993,7 +1049,7 @@
     await pedidoInstalar.userChoice.catch(() => {});
     pedidoInstalar = null; $("instalar").hidden = true;
   };
-  if (seguro && "serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  if (seguro && !APP && "serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
   // El primer toque en el control pasa a pantalla completa (el navegador lo exige así).
   document.addEventListener("pointerdown", () => { pantallaCompleta(); mantenerEncendida(); }, { once: true });
@@ -1336,7 +1392,8 @@
     const grid = $("juegosGrid"), estado = $("estadoLista");
     grid.textContent = ""; estado.textContent = tr("Cargando tus juegos…");
     try {
-      const r = await fetch(`/juegos?t=${encodeURIComponent(token || "")}`, { cache: "no-store" });
+      if (APP && !BASE) { estado.textContent = tr("Por Bluetooth no se puede ver la lista de juegos: elegí el tipo de control en «Control para»."); return; }
+      const r = await fetch(`${BASE}/juegos?t=${encodeURIComponent(token || "")}`, { cache: "no-store" });
       if (!r.ok) throw new Error();
       const datos = await r.json();
       const lista = datos.juegos.sort((a, b) => (b.id === datos.abierto) - (a.id === datos.abierto));
@@ -1346,7 +1403,7 @@
         b.className = "juego" + (j.id === datos.abierto ? " abierto" : "");
         const img = document.createElement("img");
         img.loading = "lazy"; img.decoding = "async"; img.alt = "";
-        img.src = `/portada/${j.id}?t=${encodeURIComponent(token)}`;
+        img.src = `${BASE}/portada/${j.id}?t=${encodeURIComponent(token)}`;
         img.onerror = () => { img.replaceWith(Object.assign(document.createElement("div"), { className: "sinFoto" })); };
         const n = document.createElement("div"); n.className = "n"; n.textContent = j.nombre;
         const t = document.createElement("div"); t.className = "t";
@@ -1407,11 +1464,54 @@
   };
   $("copiarCerrar").onclick = () => $("copiar").classList.remove("ver");
 
+  // ---------- App de Android: elegir la PC ----------
+  let buscando = null;
+  function mostrarBuscador() {
+    if (ws) { ws.onclose = null; ws.close(); }
+    listo = false; puntos(false); soltarTodo(false);
+    $("emparejar").classList.remove("ver"); $("menu").classList.remove("ver");
+    $("buscarPC").classList.add("ver");
+    clearInterval(buscando); refrescarPCs(); buscando = setInterval(refrescarPCs, 1000);
+  }
+  function refrescarPCs() {
+    let lista = [];
+    try { lista = JSON.parse(APP.pcs()) || []; } catch (e) {}
+    $("pcEstado").textContent = tr(lista.length ? "Tocá tu PC:" : "Buscando Control Celular… ¿Está abierto en la PC?");
+    const cont = $("pcLista"), firma = JSON.stringify(lista);
+    if (cont.dataset.firma === firma) return;
+    cont.dataset.firma = firma; cont.textContent = "";
+    for (const pc of lista) {
+      const b = document.createElement("button");
+      b.textContent = `🖥 ${pc.nombre} · ${pc.ip}`;
+      b.onclick = () => elegirPC({ tipo: "red", ip: pc.ip, puerto: pc.puerto, nombre: pc.nombre });
+      cont.appendChild(b);
+    }
+  }
+  function elegirPC(d) {
+    destino = d; fallasRed = 0; guardarLocal("destino", JSON.stringify(d));
+    clearInterval(buscando); $("buscarPC").classList.remove("ver");
+    if (token) conectar(token); else pedirCodigo();
+  }
+  function arrancarApp() {
+    $("cambiarPC").hidden = false;
+    for (const id of ["pantalla", "instalar", "activar"]) $(id).hidden = true;
+    $("cambiarPC").onclick = mostrarBuscador;
+    $("usarBT").onclick = () => elegirPC({ tipo: "bt", nombre: "Bluetooth" });
+    $("abrirAnclaje").onclick = () => { try { APP.abrirAnclaje(); } catch (e) {} };
+    $("pcManualIr").onclick = () => {
+      const ip = $("pcManual").value.trim();
+      if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) elegirPC({ tipo: "red", ip, puerto: 8765, nombre: ip });
+    };
+    if (destino) { if (token) conectar(token); else pedirCodigo(); }
+    else mostrarBuscador();
+  }
+
   // ---------- Arranque ----------
   if (juegoElegido) ponerJuego(juegoElegido, false); // deja dibujado el control del último juego
   ponerModelo(leer("modelo", "completo"));
   aplicarGiro();
-  if (token) conectar(token);
+  if (APP) arrancarApp();
+  else if (token) conectar(token);
   else if (codigoQR) conectar(codigoQR); // vino del QR: se empareja solo, sin escribir nada
   else pedirCodigo();
 })();
