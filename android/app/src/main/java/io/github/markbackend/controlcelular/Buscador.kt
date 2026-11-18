@@ -1,4 +1,4 @@
-package io.github.workon2027.controlcelular
+package io.github.markbackend.controlcelular
 
 import android.content.Context
 import android.net.wifi.WifiManager

@@ -1,4 +1,4 @@
-package io.github.workon2027.controlcelular
+package io.github.markbackend.controlcelular
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice

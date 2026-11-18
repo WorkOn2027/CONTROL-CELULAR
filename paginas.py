@@ -27,7 +27,7 @@ ES_IOS = re.compile(r"iPhone|iPad|iPod")
 # el navegador de la app necesita este permiso para leerla desde otro origen.
 PARA_LA_APP = [("Access-Control-Allow-Origin", "*")]
 # La app de Android, siempre la última versión publicada (el archivo de Releases se tiene que llamar así)
-DESCARGA_APP = "https://github.com/WorkOn2027/CONTROL-CELULAR/releases/latest/download/ControlCelular.apk"
+DESCARGA_APP = "https://github.com/markbackend/CONTROL-CELULAR/releases/latest/download/ControlCelular.apk"
 
 
 @dataclass

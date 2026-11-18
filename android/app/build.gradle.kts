@@ -16,11 +16,11 @@ val firma = Properties().apply {
 }
 
 android {
-    namespace = "io.github.workon2027.controlcelular"
+    namespace = "io.github.markbackend.controlcelular"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "io.github.workon2027.controlcelular"
+        applicationId = "io.github.markbackend.controlcelular"
         minSdk = 26
         targetSdk = 34
         versionCode = numeros[0] * 10000 + numeros[1] * 100 + numeros[2]

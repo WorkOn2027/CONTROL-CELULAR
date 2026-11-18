@@ -25,7 +25,7 @@ if (-not (Test-Path $props)) {
     $clave = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 32 | ForEach-Object { [char]$_ })
     $almacen = "$firma\controlcelular.jks"
     & "$env:JAVA_HOME\bin\keytool.exe" -genkeypair -keystore $almacen -alias controlcelular -keyalg RSA -keysize 2048 `
-        -validity 36500 -storepass $clave -keypass $clave -dname "CN=Control Celular, O=WorkOn2027" | Out-Null
+        -validity 36500 -storepass $clave -keypass $clave -dname "CN=Control Celular, O=markbackend" | Out-Null
     $archivo = $almacen -replace '\\', '/'
     Set-Content $props -Encoding ascii -Value @("archivo=$archivo", "alias=controlcelular", "clave=$clave")
     Write-Host "  Firma nueva creada en $firma (guardala: sin ella no se puede actualizar la app)."

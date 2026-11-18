@@ -26,9 +26,9 @@
 AppId={{6F1C2E5A-7B3D-4C8E-9A21-C0E7A11E2025}
 AppName={#Programa}
 AppVersion={#Version}
-AppPublisher=WorkOn2027
-AppPublisherURL=https://github.com/WorkOn2027/CONTROL-CELULAR
-AppSupportURL=https://github.com/WorkOn2027/CONTROL-CELULAR/issues
+AppPublisher=markbackend
+AppPublisherURL=https://github.com/markbackend/CONTROL-CELULAR
+AppSupportURL=https://github.com/markbackend/CONTROL-CELULAR/issues
 DefaultDirName={autopf}\{#Programa}
 DefaultGroupName={#Programa}
 DisableProgramGroupPage=yes

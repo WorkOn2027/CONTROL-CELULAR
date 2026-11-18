@@ -1,4 +1,4 @@
-package io.github.workon2027.controlcelular
+package io.github.markbackend.controlcelular
 
 import android.Manifest
 import android.app.Activity

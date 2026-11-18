@@ -9,7 +9,7 @@ import re
 import urllib.request
 
 VERSION = "1.8.0"
-REPO = "WorkOn2027/CONTROL-CELULAR"
+REPO = "markbackend/CONTROL-CELULAR"
 PAGINA_RELEASES = f"https://github.com/{REPO}/releases/latest"
 
 
