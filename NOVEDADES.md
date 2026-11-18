@@ -1,5 +1,18 @@
 # Novedades
 
+## 1.6.0
+
+- **Ventana nueva en la PC:** en lugar de la ventana negra de texto, una ventana propia con el QR, el código, los
+  4 lugares de jugador (qué celular está en cada uno y si es Xbox o DualShock 4), el juego de Steam abierto, los
+  celulares emparejados (con «Olvidar»), la actividad y ⚙ Opciones (abrir al prender la PC, avisos de versión nueva
+  y Apagar). Si la cerrás, Control Celular sigue en el ícono al lado del reloj; si lo abrís otra vez, trae la misma
+  ventana en vez de avisar «ya está abierto». Las preguntas (firewall, driver) ahora son carteles con Sí / No.
+- **Animación de arranque:** al abrir Control Celular, el control de neón se enciende en el centro de la pantalla
+  (unos 2 segundos, mientras el programa arranca) y después aparece la ventana con el QR. No sale al arrancar oculto
+  con Windows ni al volver de minimizado.
+- **Limpieza más completa:** al actualizar, el instalador también borra los restos temporales que dejaban las versiones
+  portátiles anteriores a la 1.4.1.
+
 ## 1.5.0
 
 - **Instalador:** `ControlCelular-Instalar-1.5.0.exe`. Con un solo permiso de Windows deja todo listo:
@@ -15,14 +28,6 @@
   app y usar el giroscopio) pasa a ser opcional: menú ☰ → «Activar app y giroscopio».
 - **Ícono nuevo:** un control con bordes de neón (celeste y verde) sobre fondo oscuro, en el escritorio, el menú
   Inicio, el ícono al lado del reloj y la app del celular.
-- **Ventana nueva en la PC:** en lugar de la ventana negra de texto, una ventana propia con el QR, el código, los
-  4 lugares de jugador (qué celular está en cada uno y si es Xbox o DualShock 4), el juego de Steam abierto, los
-  celulares emparejados (con «Olvidar»), la actividad y ⚙ Opciones (abrir al prender la PC, avisos de versión nueva
-  y Apagar). Si la cerrás, Control Celular sigue en el ícono al lado del reloj; si lo abrís otra vez, trae la misma
-  ventana en vez de avisar «ya está abierto». Las preguntas (firewall, driver) ahora son carteles con Sí / No.
-- **Animación de arranque:** al abrir Control Celular, el control de neón se enciende en el centro de la pantalla
-  (unos 2 segundos, mientras el programa arranca) y después aparece la ventana con el QR. No sale al arrancar oculto
-  con Windows ni al volver de minimizado.
 - El programa instalado arranca más rápido (ya no se descomprime cada vez).
 - Sigue estando la versión portátil `ControlCelular.exe`, que no se instala.
 
